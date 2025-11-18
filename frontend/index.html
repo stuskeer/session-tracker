@@ -13,20 +13,26 @@
     <pre id="output">
         <div id="output">Waiting for data...</div>
     </pre>
-    <form id="add-session-form" style="margin-top:2em;">
-        
-      
-      <input type="text" name="location" placeholder="Location" required />
-      <input type="text" name="kite" placeholder="Kite" required />
-      <input type="number" name="max_jump" placeholder="Max Jump" required />
-      <button type="submit">Add Session</button>
-    </form>
-    <div id="add-session-message"></div>
-    <form id="remove-session-form" style="margin-top:2em;">
+
+    <details style="margin-top:2em;">
+      <summary style="font-size:1.1em; cursor:pointer;">➕ Add Session</summary>
+      <form id="add-session-form" style="margin-top:1em;">
+        <input type="text" name="location" placeholder="Location" required />
+        <input type="text" name="kite" placeholder="Kite" required />
+        <input type="number" name="max_jump" placeholder="Max Jump" required />
+        <button type="submit">Add Session</button>
+      </form>
+      <div id="add-session-message"></div>
+    </details>
+
+    <details style="margin-top:2em;">
+      <summary style="font-size:1.1em; cursor:pointer;">🗑️ Remove Session</summary>
+      <form id="remove-session-form" style="margin-top:1em;">
         <input type="text" name="id" placeholder="Session ID to remove" required />
         <button type="submit">Remove Session</button>
       </form>
       <div id="remove-session-message"></div>
+    </details>
     <script>
       document
         .getElementById("fetch-btn")
