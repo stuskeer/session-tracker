@@ -1,7 +1,7 @@
 body {
     font-family: system-ui, sans-serif;
     background: linear-gradient(135deg, #20232a, #0088cc);
-    color: white;
+    color:black;
     text-align: center;
     padding: 2rem;
   }
@@ -27,9 +27,9 @@ body {
   }
   
   #output {
-    margin-top: 2rem;
-    background: rgba(255, 255, 255, 0.1);
-    padding: 1rem;
-    border-radius: 8px;
-    font-size: 0.95rem;
+    font-family: monospace;
+    background: #f4f4f4;
+    padding: 1em;
+    border-radius: 4px;
+    white-space: pre-wrap;
   }
