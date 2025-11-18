@@ -7,12 +7,12 @@ import {
   DeleteCommand,
 } from "@aws-sdk/lib-dynamodb";
 import { v4 as uuidv4 } from "uuid";
-import accountSchema from "../models/account.js";
+import sessionSchema from "../models/session.js";
 
-async function getAllAccounts(req, res, next) {
+async function getAllSessions(req, res, next) {
   try {
     const params = {
-      TableName: "Accounts",
+      TableName: "Sessions",
     };
     const command = new ScanCommand(params);
     const result = await database.send(command);
@@ -22,26 +22,26 @@ async function getAllAccounts(req, res, next) {
   }
 }
 
-async function createAccount(req, res, next) {
+async function createSession(req, res, next) {
   try {
     const uuid = uuidv4();
     req.body.id = uuid;
-    const { error, value } = accountSchema.validate(req.body);
+    const { error, value } = sessionSchema.validate(req.body);
 
     if (error) {
       res.status(400).json({ error: error.details[0].message });
       return;
     }
 
-    const { id, sort_code, account_number, balance } = value;
+    const { id, location, kite, max_jump } = value;
 
     const params = {
-      TableName: "Accounts",
+      TableName: "Sessions",
       Item: {
         id,
-        sort_code,
-        account_number,
-        balance,
+        location,
+        kite,
+        max_jump,
       },
     };
 
@@ -51,23 +51,23 @@ async function createAccount(req, res, next) {
 
     res
       .status(201)
-      .json({ message: "Successfully created account", data: params.Item });
+      .json({ message: "Successfully created session", data: params.Item });
   } catch (error) {
     next(error);
   }
 }
 
-async function getAccountById(req, res, next) {
-  const accountId = req.params.id;
+async function getSessionById(req, res, next) {
+  const sessionId = req.params.id;
   try {
     const params = {
-      TableName: "Accounts",
-      Key: { id: accountId },
+      TableName: "Sessions",
+      Key: { id: sessionId },
     };
     const command = new GetCommand(params);
     const result = await database.send(command);
     if (!result.Item) {
-      return res.status(404).json({ message: "No account found" });
+      return res.status(404).json({ message: "No session found" });
     }
     res.status(200).json(result.Item);
   } catch (err) {
@@ -75,67 +75,67 @@ async function getAccountById(req, res, next) {
   }
 }
 
-async function updateAccountById(req, res, next) {
+async function updateSessionById(req, res, next) {
   try {
-    const accountId = req.params.id;
-    req.body.id = accountId;
-    const { error, value } = accountSchema.validate(req.body);
+    const sessionId = req.params.id;
+    req.body.id = sessionId;
+    const { error, value } = sessionSchema.validate(req.body);
 
     if (error) {
       return res.status(400).json({ error: error.details[0].message });
     }
 
-    const { balance, sort_code, account_number } = value;
+    const { max_jump, location, kite } = value;
 
     // Get the movie from DynamoDB
     const getParams = {
-      TableName: "Accounts",
-      Key: { id: accountId },
+      TableName: "Sessions",
+      Key: { id: sessionId },
     };
 
     const getCommand = new GetCommand(getParams);
 
     const result = await database.send(getCommand);
 
-    const account = result.Item;
+    const session = result.Item;
 
-    if (!account) {
-      return res.status(404).json({ message: "No account found" });
+    if (!session) {
+      return res.status(404).json({ message: "No session found" });
     }
 
-    // Update the account in DynamoDB
+    // Update the session in DynamoDB
     const updateParams = {
-      TableName: "Accounts",
-      Key: { id: accountId },
+      TableName: "Sessions",
+      Key: { id: sessionId },
       UpdateExpression:
-        "set #balance = :balance, #sort_code = :sort_code, #account_number = :account_number",
+        "set #max_jump = :max_jump, #location = :location, #kite = :kite",
       ExpressionAttributeNames: {
-        "#balance": "balance",
-        "#sort_code": "sort_code",
-        "#account_number": "account_number",
+        "#max_jump": "max_jump",
+        "#location": "location",
+        "#kite": "kite",
       },
       ExpressionAttributeValues: {
-        ":balance": balance,
-        ":sort_code": sort_code,
-        ":account_number": account_number,
+        ":max_jump": max_jump,
+        ":location": location,
+        ":kite": kite,
       },
       ReturnValues: "ALL_NEW",
     };
     const updateCommand = new UpdateCommand(updateParams);
-    const updatedAccount = await database.send(updateCommand);
+    const updatedSession = await database.send(updateCommand);
 
-    res.status(200).json(updatedAccount.Attributes);
+    res.status(200).json(updatedSession.Attributes);
   } catch (err) {
     next(err);
   }
 }
 
-async function deleteAccountById(req, res, next) {
-  const accountId = req.params.id;
+async function deleteSessionById(req, res, next) {
+  const sessionId = req.params.id;
   try {
     const params = {
-      TableName: "Accounts",
-      Key: { id: accountId },
+      TableName: "Sessions",
+      Key: { id: sessionId },
     };
     const command = new DeleteCommand(params);
     await database.send(command);
@@ -146,9 +146,9 @@ async function deleteAccountById(req, res, next) {
 }
 
 export default {
-  getAllAccounts,
-  createAccount,
-  getAccountById,
-  updateAccountById,
-  deleteAccountById,
+  getAllSessions,
+  createSession,
+  getSessionById,
+  updateSessionById,
+  deleteSessionById,
 };
