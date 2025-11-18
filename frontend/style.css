@@ -1,0 +1,35 @@
+body {
+    font-family: system-ui, sans-serif;
+    background: linear-gradient(135deg, #20232a, #0088cc);
+    color: white;
+    text-align: center;
+    padding: 2rem;
+  }
+  
+  h1 {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+  }
+  
+  button {
+    background: #00cc99;
+    color: black;
+    border: none;
+    border-radius: 6px;
+    padding: 0.7rem 1.2rem;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  button:hover {
+    background: #00e6b8;
+  }
+  
+  #output {
+    margin-top: 2rem;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 1rem;
+    border-radius: 8px;
+    font-size: 0.95rem;
+  }
