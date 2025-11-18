@@ -5,7 +5,7 @@ const Router = express.Router();
 Router.route("/session")
   .get((req, res) => {
     res.send(
-      "🤖 Session Route with GET method - this endpoint will get all of the session from the database"
+      "🤖 Session Route with GET method - this endpoint will get all of the sessions from the database"
     );
   })
   .post((req, res) => {
