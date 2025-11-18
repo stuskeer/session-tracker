@@ -6,7 +6,8 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <h1>☕ Session Tracker</h1>
+    <img src="/images/logo.jpg" alt="Session Tracker Logo" style="display:block; margin:auto; max-width:200px;" />
+    <h1>Session Tracker</h1>
     <p>This frontend calls your API running on port 3000:</p>
     <button id="fetch-btn">Fetch /sessions</button>
     <pre id="output">
@@ -14,7 +15,7 @@
     </pre>
     <form id="add-session-form" style="margin-top:2em;">
         
-      <input type="text" name="id" placeholder="Session ID" required />
+      
       <input type="text" name="location" placeholder="Location" required />
       <input type="text" name="kite" placeholder="Kite" required />
       <input type="number" name="max_jump" placeholder="Max Jump" required />
