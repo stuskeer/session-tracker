@@ -7,9 +7,9 @@
   </head>
   <body>
     <img src="/images/logo.jpg" alt="Session Tracker Logo" style="display:block; margin:auto; max-width:200px;" />
-    <h1>Session Tracker</h1>
+    <h1>Kitesurf Session Tracker</h1>
     <p>This frontend calls your API running on port 3000:</p>
-    <button id="fetch-btn">Fetch /sessions</button>
+    <button id="fetch-btn">Fetch Sessions</button>
     <pre id="output">
         <div id="output">Waiting for data...</div>
     </pre>
@@ -54,7 +54,23 @@
             const res = await fetch("http://localhost:3000/sessions");
             if (!res.ok) throw new Error("HTTP " + res.status);
             const data = await res.json();
-            output.textContent = JSON.stringify(data, null, 2);
+            
+            if (data.length === 0) {
+              output.innerHTML = "<p>No sessions yet.</p>";
+              return;
+            }
+            
+            let html = '<div class="sessions-grid">';
+            data.forEach(session => {
+              html += `<div class="session-card">
+                <h3>📍 ${session.location}</h3>
+                <p><strong>Kite:</strong> ${session.kite}</p>
+                <p><strong>Max Jump:</strong> ${session.max_jump}m</p>
+                <p class="session-id"><strong>ID:</strong> ${session.id}</p>
+              </div>`;
+            });
+            html += '</div>';
+            output.innerHTML = html;
           } catch (err) {
             output.textContent =
               "❌ Could not reach backend (" + err.message + ")";
