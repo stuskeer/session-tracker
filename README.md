@@ -4,9 +4,11 @@ A simple Node.js application to track and manage your kitesurf sessions.
 
 ## Features
 
-- Log session details
-- View session history
-- Edit and delete sessions
+- Log kitesurf session details (location, kite, max jump height)
+- View all sessions in a card-based grid layout
+- Update existing sessions
+- Delete sessions
+- User-friendly session numbering (hides UUID complexity)
 
 ## Project Structure
 
