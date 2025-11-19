@@ -33,6 +33,17 @@
       </form>
       <div id="remove-session-message"></div>
     </details>
+    <details style="margin-top:2em;">
+      <summary style="font-size:1.1em; cursor:pointer;">✏️ Update Session</summary>
+      <form id="update-session-form" style="margin-top:1em;">
+        <input type="text" name="id" placeholder="Session ID to update" required />
+        <input type="text" name="location" placeholder="New Location" required />
+        <input type="text" name="kite" placeholder="New Kite" required />
+        <input type="number" name="max_jump" placeholder="New Max Jump" required />
+        <button type="submit">Update Session</button>
+      </form>
+      <div id="update-session-message"></div>
+    </details>
     <script>
       document
         .getElementById("fetch-btn")
@@ -98,6 +109,33 @@
             message.textContent = "❌ Could not remove session (" + err.message + ")";
             }
         });
+    
+    document
+      .getElementById("update-session-form")
+      .addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const form = e.target;
+        const message = document.getElementById("update-session-message");
+        message.textContent = "Updating session...";
+        const data = {
+          location: form.location.value,
+          kite: form.kite.value,
+          max_jump: Number(form.max_jump.value),
+        };
+        try {
+          const res = await fetch(`http://localhost:3000/sessions/${form.id.value}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data),
+          });
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          message.textContent = "✅ Session updated!";
+          form.reset();
+          document.getElementById("fetch-btn").click();
+        } catch (err) {
+          message.textContent = "❌ Could not update session (" + err.message + ")";
+        }
+      });
     </script>
   </body>
 </html>
