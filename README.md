@@ -4,9 +4,11 @@ A simple Node.js application to track and manage your kitesurf sessions.
 
 ## Features
 
-- Log session details
-- View session history
-- Edit and delete sessions
+- Log kitesurf session details (location, kite, max jump height)
+- View all sessions in a card-based grid layout
+- Update existing sessions
+- Delete sessions
+- User-friendly session numbering (hides UUID complexity)
 
 ## Project Structure
 
@@ -49,29 +51,55 @@ views/
    ```sh
    npm install
    ```
-3. (Optional) Copy and edit the `.env` file if environment variables are required:
-   ```sh
-   cp .env.example .env
-   # Edit .env as needed
+3. Create a `.env` file in the root directory with your AWS credentials:
+   ```env
+   AWS_REGION=us-east-1
+   AWS_ACCESS_KEY_ID=your_access_key
+   AWS_SECRET_ACCESS_KEY=your_secret_key
    ```
 
-## Usage
+## Running on Your PC
 
-### Development
+### Prerequisites
+- Node.js installed (v18 or later)
+- AWS credentials configured in `.env` file
+- DynamoDB table set up (see `session_database.tf`)
 
-Start the server in development mode (with nodemon):
-```sh
-npm run dev
-```
+### Windows (PowerShell)
+1. Set environment variables (or use `.env` file):
+   ```powershell
+   $env:AWS_REGION="us-east-1"
+   ```
+2. Start the backend server:
+   ```powershell
+   node index.js
+   ```
+3. Open your browser and navigate to:
+   ```
+   http://localhost:3000
+   ```
 
-### Production
+### Linux/Mac
+1. Set environment variables (or use `.env` file):
+   ```sh
+   export AWS_REGION=us-east-1
+   ```
+2. Start the backend server:
+   ```sh
+   node index.js
+   ```
+3. Open your browser and navigate to:
+   ```
+   http://localhost:3000
+   ```
 
-Start the server in production mode:
-```sh
-npm run prod
-```
+The backend server will:
+- Run on port 3000
+- Serve the frontend HTML/CSS files automatically
+- Handle all API endpoints for session management
+- Connect to your DynamoDB database
 
-The backend will run on the default port (e.g., 3000). The frontend can be accessed via `frontend/index.html`.
+**Note:** Do not use `python -m http.server` to serve the frontend - it won't handle the API endpoints. Always use `node index.js` to run the complete application.
 
 ## API Endpoints
 
