@@ -7,7 +7,7 @@ import {
   DeleteCommand,
 } from "@aws-sdk/lib-dynamodb";
 import { v4 as uuidv4 } from "uuid";
-import sessionSchema from "../models/session.js";
+import sessionSchema, { updateSessionSchema } from "../models/session.js";
 
 async function getAllSessions(req, res, next) {
   try {
@@ -79,46 +79,56 @@ async function updateSessionById(req, res, next) {
   try {
     const sessionId = req.params.id;
     req.body.id = sessionId;
-    const { error, value } = sessionSchema.validate(req.body);
+    const { error, value } = updateSessionSchema.validate(req.body);
 
     if (error) {
       return res.status(400).json({ error: error.details[0].message });
     }
 
-    const { max_jump, location, kite } = value;
-
-    // Get the movie from DynamoDB
+    // Get the session from DynamoDB to verify it exists
     const getParams = {
       TableName: "Sessions",
       Key: { id: sessionId },
     };
 
     const getCommand = new GetCommand(getParams);
-
     const result = await database.send(getCommand);
-
     const session = result.Item;
 
     if (!session) {
       return res.status(404).json({ message: "No session found" });
     }
 
+    // Build dynamic UpdateExpression based on provided fields
+    const updateExpressions = [];
+    const expressionAttributeNames = {};
+    const expressionAttributeValues = {};
+
+    if (value.max_jump !== undefined) {
+      updateExpressions.push("#max_jump = :max_jump");
+      expressionAttributeNames["#max_jump"] = "max_jump";
+      expressionAttributeValues[":max_jump"] = value.max_jump;
+    }
+
+    if (value.location !== undefined) {
+      updateExpressions.push("#location = :location");
+      expressionAttributeNames["#location"] = "location";
+      expressionAttributeValues[":location"] = value.location;
+    }
+
+    if (value.kite !== undefined) {
+      updateExpressions.push("#kite = :kite");
+      expressionAttributeNames["#kite"] = "kite";
+      expressionAttributeValues[":kite"] = value.kite;
+    }
+
     // Update the session in DynamoDB
     const updateParams = {
       TableName: "Sessions",
       Key: { id: sessionId },
-      UpdateExpression:
-        "set #max_jump = :max_jump, #location = :location, #kite = :kite",
-      ExpressionAttributeNames: {
-        "#max_jump": "max_jump",
-        "#location": "location",
-        "#kite": "kite",
-      },
-      ExpressionAttributeValues: {
-        ":max_jump": max_jump,
-        ":location": location,
-        ":kite": kite,
-      },
+      UpdateExpression: "set " + updateExpressions.join(", "),
+      ExpressionAttributeNames: expressionAttributeNames,
+      ExpressionAttributeValues: expressionAttributeValues,
       ReturnValues: "ALL_NEW",
     };
     const updateCommand = new UpdateCommand(updateParams);

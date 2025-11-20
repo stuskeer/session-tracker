@@ -51,9 +51,9 @@
       <form id="update-session-form" style="margin-top:1em;">
         <!-- User enters the simple display number (1, 2, 3...), not the UUID -->
         <input type="number" name="id" placeholder="Session # to update" required />
-        <input type="text" name="location" placeholder="New Location" required />
-        <input type="text" name="kite" placeholder="New Kite" required />
-        <input type="number" name="max_jump" placeholder="New Max Jump" required />
+        <input type="text" name="location" placeholder="New Location (optional)" />
+        <input type="text" name="kite" placeholder="New Kite (optional)" />
+        <input type="number" name="max_jump" placeholder="New Max Jump (optional)" />
         <button type="submit">Update Session</button>
       </form>
       <!-- Status message displayed after attempting to update a session -->
@@ -69,6 +69,7 @@
         .getElementById("fetch-btn")
         .addEventListener("click", async () => {
           const output = document.getElementById("output");
+          output.classList.add("visible");
           output.textContent = "Fetching data...";
           try {
             // GET request to fetch all sessions from the API
@@ -197,12 +198,24 @@
           return;
         }
         
-        // Collect updated form data
-        const data = {
-          location: form.location.value,
-          kite: form.kite.value,
-          max_jump: Number(form.max_jump.value),
-        };
+        // Collect only the fields that have values
+        const data = {};
+        if (form.location.value.trim()) {
+          data.location = form.location.value;
+        }
+        if (form.kite.value.trim()) {
+          data.kite = form.kite.value;
+        }
+        if (form.max_jump.value) {
+          data.max_jump = Number(form.max_jump.value);
+        }
+        
+        // Check if at least one field is being updated
+        if (Object.keys(data).length === 0) {
+          message.textContent = "❌ Please enter at least one field to update";
+          return;
+        }
+        
         try {
           // PUT request to update session using the real UUID
           const res = await fetch(`http://localhost:3000/sessions/${realId}`, {

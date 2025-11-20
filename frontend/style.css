@@ -32,6 +32,11 @@ body {
     padding: 1em;
     border-radius: 4px;
     white-space: pre-wrap;
+    display: none;
+  }
+
+  #output.visible {
+    display: block;
   }
   
   .sessions-grid {
