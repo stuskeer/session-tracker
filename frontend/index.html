@@ -12,6 +12,10 @@
     
     <h1>Kitesurf Session Tracker</h1>
     
+    <div style="text-align: center; margin-bottom: 1em;">
+      <button id="logout-btn" style="padding: 0.5em 1em; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">Logout</button>
+    </div>
+    
     <!-- Button to fetch and display all sessions -->
     <button id="fetch-btn">Fetch Sessions</button>
     
@@ -89,6 +93,38 @@
       <div id="update-session-message"></div>
     </details>
     <script>
+      // Check authentication on page load
+      async function checkAuth() {
+        try {
+          const res = await fetch("http://localhost:3000/auth/check", {
+            credentials: 'include'
+          });
+          const data = await res.json();
+          if (!data.authenticated) {
+            window.location.href = "/login.html";
+          }
+        } catch (err) {
+          console.error("Auth check failed:", err);
+          window.location.href = "/login.html";
+        }
+      }
+      
+      // Run auth check on page load
+      checkAuth();
+      
+      // Logout handler
+      document.getElementById("logout-btn").addEventListener("click", async () => {
+        try {
+          await fetch("http://localhost:3000/auth/logout", {
+            method: "POST",
+            credentials: 'include'
+          });
+          window.location.href = "/login.html";
+        } catch (err) {
+          console.error("Logout failed:", err);
+        }
+      });
+      
       // Map to store relationship between user-friendly display IDs (1, 2, 3...) and actual UUIDs
       // This hides complex UUIDs from the user while maintaining backend compatibility
       let sessionIdMap = new Map();
@@ -102,7 +138,9 @@
           output.textContent = "Fetching data...";
           try {
             // GET request to fetch all sessions from the API
-            const res = await fetch("http://localhost:3000/sessions");
+            const res = await fetch("http://localhost:3000/sessions", {
+              credentials: 'include'
+            });
             if (!res.ok) throw new Error("HTTP " + res.status);
             const data = await res.json();
             
@@ -160,6 +198,7 @@
             const res = await fetch("http://localhost:3000/sessions", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
+              credentials: 'include',
               body: JSON.stringify(data),
             });
             if (!res.ok) throw new Error("HTTP " + res.status);
@@ -198,6 +237,7 @@
             // DELETE request using the real UUID
             const res = await fetch(`http://localhost:3000/sessions/${realId}`, {
                 method: "DELETE",
+                credentials: 'include',
             });
             if (!res.ok) throw new Error("HTTP " + res.status);
             message.textContent = "✅ Session removed!";
@@ -255,6 +295,7 @@
           const res = await fetch(`http://localhost:3000/sessions/${realId}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
+            credentials: 'include',
             body: JSON.stringify(data),
           });
           if (!res.ok) throw new Error("HTTP " + res.status);

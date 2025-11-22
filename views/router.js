@@ -1,15 +1,23 @@
 import express from "express";
 import sessionController from "../controllers/sessionController.js";
+import authController from "../controllers/authController.js";
+import requireAuth from "../middleware/auth.js";
 
 const Router = express.Router();
 
-Router.route("/sessions")
-  .get(sessionController.getAllSessions)
-  .post(sessionController.createSession);
+// Authentication routes (public)
+Router.post("/auth/login", authController.login);
+Router.post("/auth/logout", authController.logout);
+Router.get("/auth/check", authController.checkAuth);
 
-  Router.route("/sessions/:id") // <-- this defines an endpoint with a "placeholder" for the id
-  .get(sessionController.getSessionById)
-  .put(sessionController.updateSessionById)
-  .delete(sessionController.deleteSessionById);
+// Session routes (protected - require authentication)
+Router.route("/sessions")
+  .get(requireAuth, sessionController.getAllSessions)
+  .post(requireAuth, sessionController.createSession);
+
+Router.route("/sessions/:id") // <-- this defines an endpoint with a "placeholder" for the id
+  .get(requireAuth, sessionController.getSessionById)
+  .put(requireAuth, sessionController.updateSessionById)
+  .delete(requireAuth, sessionController.deleteSessionById);
 
 export default Router;

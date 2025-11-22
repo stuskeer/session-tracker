@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Login - Session Tracker</title>
+    <link rel="stylesheet" href="style.css" />
+    <style>
+      .login-container {
+        max-width: 400px;
+        margin: 50px auto;
+        padding: 2em;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      }
+      .login-form {
+        display: flex;
+        flex-direction: column;
+        gap: 1em;
+      }
+      .form-group {
+        display: flex;
+        flex-direction: column;
+      }
+      .form-group label {
+        margin-bottom: 0.3em;
+        font-weight: bold;
+      }
+      .form-group input {
+        padding: 0.7em;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 1em;
+      }
+      .login-btn {
+        padding: 0.8em;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        font-size: 1em;
+        cursor: pointer;
+        margin-top: 0.5em;
+      }
+      .login-btn:hover {
+        background: #0056b3;
+      }
+      .error-message {
+        color: #dc3545;
+        margin-top: 1em;
+        text-align: center;
+      }
+      .success-message {
+        color: #28a745;
+        margin-top: 1em;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <img src="/images/logo.jpeg" alt="Session Tracker Logo" style="display:block; margin:auto; max-width:400px;" />
+    
+    <div class="login-container">
+      <h1 style="text-align: center;">Login</h1>
+      
+      <form id="login-form" class="login-form">
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" placeholder="Enter your email" required />
+        </div>
+        
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" placeholder="Enter your password" required />
+        </div>
+        
+        <button type="submit" class="login-btn">Login</button>
+      </form>
+      
+      <div id="login-message"></div>
+    </div>
+
+    <script>
+      document.getElementById("login-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const form = e.target;
+        const message = document.getElementById("login-message");
+        
+        message.textContent = "Logging in...";
+        message.className = "";
+        
+        const data = {
+          email: form.email.value,
+          password: form.password.value,
+        };
+        
+        try {
+          const res = await fetch("http://localhost:3000/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: 'include',
+            body: JSON.stringify(data),
+          });
+          
+          const result = await res.json();
+          
+          if (!res.ok) {
+            message.textContent = result.error || "Login failed";
+            message.className = "error-message";
+            return;
+          }
+          
+          message.textContent = "✅ Login successful! Redirecting...";
+          message.className = "success-message";
+          
+          // Redirect to main page after successful login
+          setTimeout(() => {
+            window.location.href = "/index.html";
+          }, 1000);
+          
+        } catch (err) {
+          message.textContent = "❌ Error: " + err.message;
+          message.className = "error-message";
+        }
+      });
+    </script>
+  </body>
+</html>

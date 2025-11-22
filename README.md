@@ -4,11 +4,13 @@ A simple Node.js application to track and manage your kitesurf sessions.
 
 ## Features
 
-- Log kitesurf session details (location, kite, max jump height)
+- User authentication with login system
+- Log kitesurf session details (location, kite, duration, max jump height)
 - View all sessions in a card-based grid layout
 - Update existing sessions
 - Delete sessions
 - User-friendly session numbering (hides UUID complexity)
+- Session management with secure logout
 
 ## Project Structure
 
@@ -23,10 +25,14 @@ terraform-fix.txt
 terraform.tfstate
 controllers/
     sessionController.js
+    authController.js
 frontend/
     index.html
+    login.html
     style.css
     images/
+middleware/
+    auth.js
 models/
     session.js
 services/
@@ -62,8 +68,11 @@ views/
    AWS_SECRET_ACCESS_KEY=dummy
    DYNAMODB_REGION=us-east-1
    DYNAMODB_ENDPOINT=http://192.168.1.49:8000
+   SESSION_SECRET=your-secret-key-change-in-production
    ```
-   **Note:** Replace `192.168.1.49` with your Raspberry Pi's IP address, or use `http://localhost:8000` if running DynamoDB Local on the same machine.
+   **Note:** 
+   - Replace `192.168.1.49` with your Raspberry Pi's IP address, or use `http://localhost:8000` if running DynamoDB Local on the same machine.
+   - Replace `SESSION_SECRET` with a secure random string for session encryption.
 
 ## Setting up DynamoDB Local on Raspberry Pi (Docker)
 
@@ -129,9 +138,9 @@ curl http://192.168.1.49:8000
 ```
 Replace `192.168.1.49` with your Pi's IP. If successful, you'll get a JSON response.
 
-### 6. Create the Sessions table
+### 6. Create the required tables
 
-Example using AWS CLI:
+**Sessions table:**
 ```sh
 aws dynamodb create-table \
   --table-name Sessions \
@@ -141,7 +150,30 @@ aws dynamodb create-table \
   --endpoint-url http://localhost:8000 \
   --region us-east-1
 ```
-This sets up the Sessions table locally.
+
+**Users table (for authentication):**
+```sh
+aws dynamodb create-table \
+  --table-name users \
+  --attribute-definitions AttributeName=user_id,AttributeType=S \
+  --key-schema AttributeName=user_id,KeyType=HASH \
+  --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5 \
+  --endpoint-url http://localhost:8000 \
+  --region us-east-1
+```
+
+**Add a test user:**
+```sh
+aws dynamodb put-item \
+  --table-name users \
+  --item '{"user_id": {"S": "test@example.com"}, "password": {"S": "password123"}}' \
+  --endpoint-url http://localhost:8000 \
+  --region us-east-1
+```
+
+**Note:** For production, you should hash passwords using bcrypt. See the bcrypt section below.
+
+These commands set up the required tables locally.
 
 ### 7. Connect your app
 
@@ -159,9 +191,10 @@ Replace `192.168.1.49` with your Pi's IP address, or use `http://localhost:8000`
 
 ### Prerequisites
 - Node.js installed (v18 or later)
-- `.env` file configured with DynamoDB Local endpoint
+- `.env` file configured with DynamoDB Local endpoint and SESSION_SECRET
 - DynamoDB Local running in Docker (on Raspberry Pi or local machine)
-- Sessions table created in DynamoDB Local
+- Sessions and users tables created in DynamoDB Local
+- At least one user account in the users table
 
 ### Windows (PowerShell)
 
@@ -174,6 +207,7 @@ Replace `192.168.1.49` with your Pi's IP address, or use `http://localhost:8000`
    ```
    http://localhost:3000
    ```
+4. You will be redirected to the login page. Enter your credentials to access the session tracker.
 
 ### Linux/Mac
 
@@ -186,30 +220,59 @@ Replace `192.168.1.49` with your Pi's IP address, or use `http://localhost:8000`
    ```
    http://localhost:3000
    ```
+4. You will be redirected to the login page. Enter your credentials to access the session tracker.
 
 The backend server will:
 - Run on port 3000
 - Serve the frontend HTML/CSS files automatically
-- Handle all API endpoints for session management
+- Handle all API endpoints for session management and authentication
 - Connect to DynamoDB Local running on your Raspberry Pi (or local machine)
+- Manage user sessions with express-session
 
 **Note:** Do not use `python -m http.server` to serve the frontend - it won't handle the API endpoints. Always use `node index.js` to run the complete application.
 
 ## API Endpoints
 
+### Authentication
+- `POST /auth/login` - Login with email and password
+- `POST /auth/logout` - Logout current user
+- `GET /auth/check` - Check authentication status
+
+### Sessions (Protected - requires authentication)
 - `GET /sessions` - List all sessions
 - `POST /sessions` - Create a new session
+- `GET /sessions/:id` - Get a specific session
 - `PUT /sessions/:id` - Update a session
 - `DELETE /sessions/:id` - Delete a session
+
+## Password Security with bcrypt (Recommended)
+
+For production use, passwords should be hashed using bcrypt:
+
+1. Install bcrypt:
+   ```sh
+   npm install bcrypt
+   ```
+
+2. Hash your password:
+   ```sh
+   node -e "const bcrypt = require('bcrypt'); bcrypt.hash('yourpassword', 10, (err, hash) => console.log(hash));"
+   ```
+
+3. Store the hashed password in your users table instead of plain text.
+
+4. Update the authentication controller to use bcrypt.compare() for password verification.
 
 ## Technologies Used
 
 - Node.js
 - Express
+- express-session (session management)
 - DynamoDB (via AWS SDK)
 - Joi (validation)
 - Morgan (logging)
 - dotenv (environment variables)
+- bcrypt (optional, for password hashing)
 
 ## License
 
