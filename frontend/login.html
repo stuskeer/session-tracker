@@ -45,6 +45,26 @@
       .login-btn:hover {
         background: #0056b3;
       }
+      .register-btn {
+        padding: 0.8em;
+        background: #28a745;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        font-size: 1em;
+        cursor: pointer;
+        margin-top: 0.5em;
+      }
+      .register-btn:hover {
+        background: #218838;
+      }
+      .toggle-link {
+        text-align: center;
+        margin-top: 1em;
+        color: #007bff;
+        cursor: pointer;
+        text-decoration: underline;
+      }
       .error-message {
         color: #dc3545;
         margin-top: 1em;
@@ -61,9 +81,9 @@
     <img src="/images/logo.jpeg" alt="Session Tracker Logo" style="display:block; margin:auto; max-width:400px;" />
     
     <div class="login-container">
-      <h1 style="text-align: center;">Login</h1>
+      <h1 id="form-title" style="text-align: center;">Login</h1>
       
-      <form id="login-form" class="login-form">
+      <form id="auth-form" class="login-form">
         <div class="form-group">
           <label for="email">Email</label>
           <input type="email" id="email" name="email" placeholder="Enter your email" required />
@@ -74,19 +94,43 @@
           <input type="password" id="password" name="password" placeholder="Enter your password" required />
         </div>
         
-        <button type="submit" class="login-btn">Login</button>
+        <button type="submit" id="submit-btn" class="login-btn">Login</button>
       </form>
       
-      <div id="login-message"></div>
+      <div class="toggle-link" id="toggle-link">Don't have an account? Register here</div>
+      
+      <div id="auth-message"></div>
     </div>
 
     <script>
-      document.getElementById("login-form").addEventListener("submit", async (e) => {
+      let isLoginMode = true;
+      
+      document.getElementById("toggle-link").addEventListener("click", () => {
+        isLoginMode = !isLoginMode;
+        const formTitle = document.getElementById("form-title");
+        const submitBtn = document.getElementById("submit-btn");
+        const toggleLink = document.getElementById("toggle-link");
+        
+        if (isLoginMode) {
+          formTitle.textContent = "Login";
+          submitBtn.textContent = "Login";
+          submitBtn.className = "login-btn";
+          toggleLink.textContent = "Don't have an account? Register here";
+        } else {
+          formTitle.textContent = "Register";
+          submitBtn.textContent = "Register";
+          submitBtn.className = "register-btn";
+          toggleLink.textContent = "Already have an account? Login here";
+        }
+        document.getElementById("auth-message").textContent = "";
+      });
+      
+      document.getElementById("auth-form").addEventListener("submit", async (e) => {
         e.preventDefault();
         const form = e.target;
-        const message = document.getElementById("login-message");
+        const message = document.getElementById("auth-message");
         
-        message.textContent = "Logging in...";
+        message.textContent = isLoginMode ? "Logging in..." : "Registering...";
         message.className = "";
         
         const data = {
@@ -94,8 +138,10 @@
           password: form.password.value,
         };
         
+        const endpoint = isLoginMode ? "/auth/login" : "/auth/register";
+        
         try {
-          const res = await fetch("http://localhost:3000/auth/login", {
+          const res = await fetch(`http://localhost:3000${endpoint}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             credentials: 'include',
@@ -105,18 +151,34 @@
           const result = await res.json();
           
           if (!res.ok) {
-            message.textContent = result.error || "Login failed";
+            message.textContent = result.error || (isLoginMode ? "Login failed" : "Registration failed");
             message.className = "error-message";
             return;
           }
           
-          message.textContent = "✅ Login successful! Redirecting...";
-          message.className = "success-message";
-          
-          // Redirect to main page after successful login
-          setTimeout(() => {
-            window.location.href = "/index.html";
-          }, 1000);
+          if (isLoginMode) {
+            message.textContent = "✅ Login successful! Redirecting...";
+            message.className = "success-message";
+            
+            // Redirect to main page after successful login
+            setTimeout(() => {
+              window.location.href = "/index.html";
+            }, 1000);
+          } else {
+            message.textContent = "✅ Registration successful! You can now login.";
+            message.className = "success-message";
+            
+            // Switch to login mode
+            setTimeout(() => {
+              isLoginMode = true;
+              document.getElementById("form-title").textContent = "Login";
+              document.getElementById("submit-btn").textContent = "Login";
+              document.getElementById("submit-btn").className = "login-btn";
+              document.getElementById("toggle-link").textContent = "Don't have an account? Register here";
+              form.reset();
+              message.textContent = "";
+            }, 2000);
+          }
           
         } catch (err) {
           message.textContent = "❌ Error: " + err.message;

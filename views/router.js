@@ -7,6 +7,7 @@ const Router = express.Router();
 
 // Authentication routes (public)
 Router.post("/auth/login", authController.login);
+Router.post("/auth/register", authController.register);
 Router.post("/auth/logout", authController.logout);
 Router.get("/auth/check", authController.checkAuth);
 

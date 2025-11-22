@@ -11,8 +11,14 @@ import sessionSchema, { updateSessionSchema } from "../models/session.js";
 
 async function getAllSessions(req, res, next) {
   try {
+    const userId = req.session.userId;
+    
     const params = {
       TableName: "Sessions",
+      FilterExpression: "user_id = :userId",
+      ExpressionAttributeValues: {
+        ":userId": userId,
+      },
     };
     const command = new ScanCommand(params);
     const result = await database.send(command);
@@ -26,6 +32,7 @@ async function createSession(req, res, next) {
   try {
     const uuid = uuidv4();
     req.body.id = uuid;
+    req.body.user_id = req.session.userId; // Add user_id from session
     const { error, value } = sessionSchema.validate(req.body);
 
     if (error) {
@@ -33,12 +40,13 @@ async function createSession(req, res, next) {
       return;
     }
 
-    const { id, location, kite, duration, max_jump } = value;
+    const { id, user_id, location, kite, duration, max_jump } = value;
 
     const params = {
       TableName: "Sessions",
       Item: {
         id,
+        user_id,
         location,
         kite,
         duration,
