@@ -33,7 +33,7 @@ async function createSession(req, res, next) {
       return;
     }
 
-    const { id, location, kite, max_jump } = value;
+    const { id, location, kite, duration, max_jump } = value;
 
     const params = {
       TableName: "Sessions",
@@ -41,6 +41,7 @@ async function createSession(req, res, next) {
         id,
         location,
         kite,
+        duration,
         max_jump,
       },
     };
@@ -120,6 +121,12 @@ async function updateSessionById(req, res, next) {
       updateExpressions.push("#kite = :kite");
       expressionAttributeNames["#kite"] = "kite";
       expressionAttributeValues[":kite"] = value.kite;
+    }
+
+    if (value.duration !== undefined) {
+      updateExpressions.push("#duration = :duration");
+      expressionAttributeNames["#duration"] = "duration";
+      expressionAttributeValues[":duration"] = value.duration;
     }
 
     // Update the session in DynamoDB
