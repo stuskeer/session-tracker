@@ -18,6 +18,10 @@ Router.delete("/auth/quiver", requireAuth, authController.removeKite);
 Router.put("/auth/email", requireAuth, authController.updateEmail);
 Router.put("/auth/password", requireAuth, authController.updatePassword);
 
+// Admin routes (protected - admin only)
+Router.get("/admin/users", requireAuth, authController.getAllUsers);
+Router.post("/admin/reset-password", requireAuth, authController.initiatePasswordReset);
+
 // Session routes (protected - require authentication)
 Router.route("/sessions")
   .get(requireAuth, sessionController.getAllSessions)

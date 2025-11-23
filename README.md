@@ -1,10 +1,11 @@
 # Session Tracker
 
-A modern Node.js application to track and manage your kitesurf sessions with a clean, data-focused interface.
+A modern Node.js application to track and manage your kitesurf sessions with a clean, data-focused interface and admin panel.
 
 ## Features
 
 - **User Authentication:** Secure login and registration system with bcrypt password hashing
+- **Role-Based Access Control:** User and admin roles with different interfaces and permissions
 - **Session Management:** Log kitesurf session details including:
   - Date (with UK format display and date picker)
   - Location
@@ -16,7 +17,13 @@ A modern Node.js application to track and manage your kitesurf sessions with a c
   - Manage personal quiver (collection of kites)
   - Add and remove kites from quiver
   - Update email address
+  - Update password securely
   - Kite selection from personal quiver when logging sessions
+- **Admin Panel:**
+  - View all registered users
+  - Initiate password resets for users
+  - User management interface
+  - Role-based access restrictions
 - **Insights Page:** Placeholder for future analytics and statistics
 - **UUID-Based Architecture:** User sessions linked via UUID, allowing email changes without data loss
 - **Session Security:** HTTP-only cookies and secure session management
@@ -30,11 +37,12 @@ package.json               # Dependencies and scripts
 .env                       # Environment configuration
 controllers/
     sessionController.js   # Session CRUD operations
-    authController.js      # Authentication and user management
+    authController.js      # Authentication, user management, and admin functions
 frontend/
     index.html            # Main sessions page with table view
     login.html            # Login/registration page
     insights.html         # Insights page (placeholder)
+    admin.html            # Admin panel for user management
     style.css             # Modern dark theme styling
     images/               # Logo and assets
 middleware/
@@ -44,7 +52,7 @@ models/
     user.js               # User validation schemas (Joi)
 services/
     database.js           # DynamoDB connection
-views/
+views:
     router.js             # API route definitions
 ```
 
@@ -173,9 +181,11 @@ aws dynamodb create-table \
 - `user_id` (String) - Unique UUID for the user (primary key)
 - `email` (String) - User's email address (must be unique)
 - `password` (String) - Bcrypt hashed password (10 salt rounds)
+- `role` (String) - User role: 'user' (default) or 'admin'
 - `account_created` (String) - UK date/time when account was created
 - `last_logon` (String) - UK date/time of last successful login
 - `quiver` (List) - Array of kite names owned by the user
+- `reset_token` (String, optional) - UUID token for password reset (set by admin)
 
 **Sessions table schema includes:**
 - `id` (String) - Unique UUID for the session (primary key)
@@ -186,7 +196,7 @@ aws dynamodb create-table \
 - `duration` (String) - Session duration in HH:MM format
 - `max_jump` (Number) - Maximum jump height in meters (0-100, 1 decimal place)
 
-The registration process automatically generates a UUID for `user_id` and initializes all fields. Sessions are linked to users via this UUID, so changing your email address doesn't affect your session history.
+The registration process automatically generates a UUID for `user_id`, assigns the default `'user'` role, and initializes all fields. Sessions are linked to users via this UUID, so changing your email address doesn't affect your session history.
 
 **Important:** If you have an existing users table with email as the primary key, you'll need to recreate it:
 ```sh
@@ -267,8 +277,8 @@ The backend server will:
 ## API Endpoints
 
 ### Authentication
-- `POST /auth/login` - Login with email and password
-- `POST /auth/register` - Register a new user account
+- `POST /auth/login` - Login with email and password (returns role, redirects based on role)
+- `POST /auth/register` - Register a new user account (default role: 'user')
 - `POST /auth/logout` - Logout current user
 - `GET /auth/check` - Check authentication status
 
@@ -277,13 +287,18 @@ The backend server will:
 - `POST /auth/quiver` - Add a kite to quiver
 - `DELETE /auth/quiver` - Remove a kite from quiver
 - `PUT /auth/email` - Update user's email address
+- `PUT /auth/password` - Update user's password (requires current password)
 
-### Sessions (Protected - requires authentication)
+### Sessions (Protected - requires authentication, user role only)
 - `GET /sessions` - List all sessions for logged-in user
 - `POST /sessions` - Create a new session
 - `GET /sessions/:id` - Get a specific session
 - `PUT /sessions/:id` - Update a session
 - `DELETE /sessions/:id` - Delete a session
+
+### Admin (Protected - requires authentication and admin role)
+- `GET /admin/users` - Get all users (excludes passwords)
+- `POST /admin/reset-password` - Initiate password reset for a user (generates reset token)
 
 ## Password Security with bcrypt
 
@@ -313,9 +328,10 @@ All password operations use bcrypt's built-in functions for secure authenticatio
 
 2. **Login:** 
    - Enter your credentials on the login page
-   - After successful login, you'll be redirected to the sessions table
+   - **Regular users** are redirected to the sessions table (`/index.html`)
+   - **Admin users** are redirected to the admin panel (`/admin.html`)
 
-3. **Managing Your Quiver:**
+3. **Managing Your Quiver (Users only):**
    - Click the hamburger menu (☰) in the top right
    - Select "Settings" (⚙️)
    - Add kites to your quiver by entering the kite name (e.g., "North Reach 11m")
@@ -354,6 +370,57 @@ All password operations use bcrypt's built-in functions for secure authenticatio
    - Open settings (⚙️ icon in hamburger menu)
    - Enter your new email address
    - Your email is updated while maintaining all your sessions and quiver data
+
+9. **Updating Password:**
+   - Open settings (⚙️ icon in hamburger menu)
+   - Expand "🔒 Update Password"
+   - Enter your current password
+   - Enter and confirm your new password (min 8 chars, mixed case + digit)
+   - Click "Update Password"
+
+### Admin Features
+
+**Admin Panel** (`/admin.html` - accessible only to users with `role: 'admin'`)
+
+1. **View All Users:**
+   - Click "Fetch All Users" to display a table of all registered users
+   - Table shows: Email, Role, Account Created, Last Login, Kite Count
+   - Admin roles are highlighted in warning color
+   - Passwords are never displayed
+
+2. **Password Reset:**
+   - Click "Reset Password" button next to any user
+   - Confirm the action in the modal
+   - A reset token is generated and stored in the user's record
+   - The user will be required to set a new password on their next login
+   - Admin cannot see the user's new password
+
+3. **Access Control:**
+   - Admin users do not have access to sessions or insights pages
+   - Admin panel is restricted to users with `role: 'admin'`
+   - Regular users cannot access admin endpoints (403 Forbidden)
+
+### Creating an Admin User
+
+To create an admin user, you need to manually update the user's role in DynamoDB:
+
+```bash
+aws dynamodb update-item \
+  --table-name users \
+  --key '{"user_id": {"S": "YOUR_USER_UUID_HERE"}}' \
+  --update-expression "SET #role = :role" \
+  --expression-attribute-names '{"#role": "role"}' \
+  --expression-attribute-values '{":role": {"S": "admin"}}' \
+  --endpoint-url http://192.168.1.49:8000 \
+  --region us-east-1
+```
+
+Replace `YOUR_USER_UUID_HERE` with the actual user_id UUID from the users table, and `192.168.1.49:8000` with your DynamoDB Local endpoint.
+
+Alternatively:
+1. Register a new account through the web interface
+2. Find the user's UUID in the DynamoDB users table
+3. Update the `role` field from `'user'` to `'admin'` using the AWS CLI command above
 
 ## Technologies Used
 

@@ -231,9 +231,13 @@
             message.textContent = "✅ Login successful! Redirecting...";
             message.className = "success-message";
             
-            // Redirect to main page after successful login
+            // Redirect based on user role after successful login
             setTimeout(() => {
-              window.location.href = "/index.html";
+              if (result.user && result.user.role === 'admin') {
+                window.location.href = "/admin.html";
+              } else {
+                window.location.href = "/index.html";
+              }
             }, 1000);
           } else {
             message.textContent = "✅ Registration successful! You can now login.";

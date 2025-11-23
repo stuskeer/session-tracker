@@ -64,14 +64,15 @@ async function login(req, res, next) {
 
     await database.send(new UpdateCommand(updateParams));
 
-    // Store user UUID in session
+    // Store user UUID and role in session
     req.session.userId = user.user_id;
     req.session.userEmail = user.email;
+    req.session.userRole = user.role || 'user';
     req.session.isAuthenticated = true;
 
     res.status(200).json({ 
       message: "Login successful",
-      user: { email: user.email }
+      user: { email: user.email, role: user.role || 'user' }
     });
   } catch (error) {
     next(error);
@@ -128,6 +129,7 @@ async function register(req, res, next) {
         user_id: userId,
         email: email,
         password: hashedPassword,
+        role: 'user', // Default role is 'user'
         account_created: ukDateTime,
         last_logon: null,
         quiver: [], // Initialize empty quiver
@@ -403,6 +405,90 @@ async function updatePassword(req, res, next) {
   }
 }
 
+async function getAllUsers(req, res, next) {
+  try {
+    // Check if user is admin
+    if (req.session.userRole !== 'admin') {
+      return res.status(403).json({ error: "Access denied. Admin privileges required." });
+    }
+    
+    const params = {
+      TableName: "users",
+    };
+    
+    const result = await database.send(new ScanCommand(params));
+    
+    // Remove sensitive data before sending
+    const users = result.Items.map(user => ({
+      user_id: user.user_id,
+      email: user.email,
+      role: user.role,
+      account_created: user.account_created,
+      last_logon: user.last_logon,
+      quiver_count: user.quiver ? user.quiver.length : 0
+    }));
+    
+    res.status(200).json({ users });
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function initiatePasswordReset(req, res, next) {
+  try {
+    // Check if user is admin
+    if (req.session.userRole !== 'admin') {
+      return res.status(403).json({ error: "Access denied. Admin privileges required." });
+    }
+    
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ error: "Email is required" });
+    }
+    
+    // Generate reset token
+    const resetToken = uuidv4();
+    
+    // Find user by email
+    const scanParams = {
+      TableName: "users",
+      FilterExpression: "email = :email",
+      ExpressionAttributeValues: {
+        ":email": email,
+      },
+    };
+    
+    const scanResult = await database.send(new ScanCommand(scanParams));
+    
+    if (!scanResult.Items || scanResult.Items.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    
+    const user = scanResult.Items[0];
+    
+    // Set reset token
+    const updateParams = {
+      TableName: "users",
+      Key: { user_id: user.user_id },
+      UpdateExpression: "set reset_token = :token",
+      ExpressionAttributeValues: {
+        ":token": resetToken,
+      },
+    };
+    
+    await database.send(new UpdateCommand(updateParams));
+    
+    res.status(200).json({ 
+      message: "Password reset initiated",
+      email: email,
+      resetToken: resetToken
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export default {
   login,
   register,
@@ -413,4 +499,6 @@ export default {
   removeKite,
   updateEmail,
   updatePassword,
+  getAllUsers,
+  initiatePasswordReset,
 };

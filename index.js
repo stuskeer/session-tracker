@@ -27,10 +27,14 @@ app.use(session({
 
 app.use(express.static('frontend')); // Add this line to serve static files
 
-// Redirect root to login page
+// Redirect root to appropriate page based on role
 app.get('/', (req, res) => {
   if (req.session && req.session.isAuthenticated) {
-    res.redirect('/index.html');
+    if (req.session.userRole === 'admin') {
+      res.redirect('/admin.html');
+    } else {
+      res.redirect('/index.html');
+    }
   } else {
     res.redirect('/login.html');
   }

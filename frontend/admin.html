@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Panel - Session Tracker</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <!-- Top right hamburger menu -->
+    <div style="position: absolute; top: 1rem; right: 1rem; z-index: 100;">
+      <button id="hamburger-btn" style="background: var(--bg-card); border: 1px solid var(--border); padding: 0.7rem; border-radius: 8px; cursor: pointer; display: flex; flex-direction: column; gap: 4px; width: 40px; height: 40px; justify-content: center; align-items: center;">
+        <span style="display: block; width: 20px; height: 2px; background: var(--text-primary); transition: 0.3s;"></span>
+        <span style="display: block; width: 20px; height: 2px; background: var(--text-primary); transition: 0.3s;"></span>
+        <span style="display: block; width: 20px; height: 2px; background: var(--text-primary); transition: 0.3s;"></span>
+      </button>
+      
+      <!-- Dropdown menu -->
+      <div id="menu-dropdown" style="display: none; position: absolute; top: 50px; right: 0; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; min-width: 180px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
+        <button id="logout-btn" style="width: 100%; padding: 0.8rem 1rem; background: none; border: none; color: var(--error); cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-size: 0.95rem; border-radius: 12px;">
+          <span style="font-size: 1.2em;">🚪</span> Logout
+        </button>
+      </div>
+    </div>
+    
+    <!-- Logo image displayed at the top -->
+    <img src="/images/logo.jpeg" alt="Session Tracker Logo" style="display:block; margin:auto; max-width:400px;" />
+    
+    <div class="container">
+      <h1>🔐 Admin Panel</h1>
+      
+      <button id="fetch-users-btn" style="display: block; margin: 2rem auto;">Fetch All Users</button>
+      
+      <div id="users-output" style="display: none; margin-top: 2rem;">
+        <h2 style="color: var(--text-primary); margin-bottom: 1rem;">User Management</h2>
+        <div id="users-table-container"></div>
+      </div>
+      
+      <!-- Password Reset Modal -->
+      <div id="reset-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center;">
+        <div style="background: var(--bg-card); padding: 2rem; border-radius: 20px; max-width: 500px; width: 90%; border: 1px solid var(--border);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <h2 style="margin: 0; color: var(--text-primary);">Initiate Password Reset</h2>
+            <button id="close-reset-modal" style="background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; padding: 0; width: 30px; height: 30px;">&times;</button>
+          </div>
+          
+          <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+            User: <strong id="reset-user-email" style="color: var(--text-primary);"></strong>
+          </p>
+          
+          <p style="color: var(--warning); margin-bottom: 1rem; font-size: 0.9rem;">
+            ⚠️ This will generate a reset token. The user will be required to set a new password on their next login.
+          </p>
+          
+          <div style="display: flex; gap: 1rem;">
+            <button id="confirm-reset-btn" style="flex: 1; background: linear-gradient(135deg, var(--warning), #f97316);">
+              Confirm Reset
+            </button>
+            <button id="cancel-reset-btn" style="flex: 1; background: var(--bg-main); color: var(--text-primary);">
+              Cancel
+            </button>
+          </div>
+          
+          <div id="reset-message" style="margin-top: 1rem; padding: 1rem; border-radius: 8px; display: none;"></div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Check authentication on page load
+      async function checkAuth() {
+        try {
+          const res = await fetch("http://localhost:3000/auth/check", {
+            credentials: 'include'
+          });
+          const data = await res.json();
+          if (!data.authenticated) {
+            window.location.href = "/login.html";
+          }
+        } catch (err) {
+          console.error("Auth check failed:", err);
+          window.location.href = "/login.html";
+        }
+      }
+      
+      // Run auth check on page load
+      checkAuth();
+      
+      // Hamburger menu toggle
+      const hamburgerBtn = document.getElementById("hamburger-btn");
+      const menuDropdown = document.getElementById("menu-dropdown");
+      
+      hamburgerBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        menuDropdown.style.display = menuDropdown.style.display === "none" ? "block" : "none";
+      });
+      
+      // Close menu when clicking outside
+      document.addEventListener("click", (e) => {
+        if (!hamburgerBtn.contains(e.target) && !menuDropdown.contains(e.target)) {
+          menuDropdown.style.display = "none";
+        }
+      });
+      
+      // Logout handler
+      document.getElementById("logout-btn").addEventListener("click", async () => {
+        menuDropdown.style.display = "none";
+        try {
+          await fetch("http://localhost:3000/auth/logout", {
+            method: "POST",
+            credentials: 'include'
+          });
+          window.location.href = "/login.html";
+        } catch (err) {
+          console.error("Logout failed:", err);
+        }
+      });
+      
+      // Fetch all users
+      document.getElementById("fetch-users-btn").addEventListener("click", async () => {
+        const output = document.getElementById("users-output");
+        const container = document.getElementById("users-table-container");
+        
+        output.style.display = "block";
+        container.innerHTML = "<p>Loading users...</p>";
+        
+        try {
+          const res = await fetch("http://localhost:3000/admin/users", {
+            credentials: 'include'
+          });
+          
+          if (!res.ok) {
+            if (res.status === 403) {
+              throw new Error("Access denied. Admin privileges required.");
+            }
+            throw new Error("HTTP " + res.status);
+          }
+          
+          const data = await res.json();
+          
+          if (data.users.length === 0) {
+            container.innerHTML = "<p>No users found.</p>";
+            return;
+          }
+          
+          // Build users table
+          let html = `<table class="sessions-table">
+            <thead>
+              <tr>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Account Created</th>
+                <th>Last Login</th>
+                <th>Kites</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>`;
+          
+          data.users.forEach(user => {
+            html += `<tr>
+              <td>${user.email}</td>
+              <td><span style="color: ${user.role === 'admin' ? 'var(--warning)' : 'var(--success)'}; font-weight: 600;">${user.role}</span></td>
+              <td>${user.account_created || '-'}</td>
+              <td>${user.last_logon || 'Never'}</td>
+              <td>${user.quiver_count}</td>
+              <td>
+                <button class="reset-password-btn" data-email="${user.email}" style="padding: 0.5rem 1rem; font-size: 0.85rem; background: linear-gradient(135deg, var(--warning), #f97316);">
+                  Reset Password
+                </button>
+              </td>
+            </tr>`;
+          });
+          
+          html += '</tbody></table>';
+          container.innerHTML = html;
+          
+          // Add event listeners to reset password buttons
+          document.querySelectorAll('.reset-password-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+              const email = e.target.getAttribute('data-email');
+              openResetModal(email);
+            });
+          });
+          
+        } catch (err) {
+          container.innerHTML = `<p style="color: var(--error);">❌ ${err.message}</p>`;
+        }
+      });
+      
+      // Password reset modal functionality
+      const resetModal = document.getElementById("reset-modal");
+      const closeResetBtn = document.getElementById("close-reset-modal");
+      const cancelResetBtn = document.getElementById("cancel-reset-btn");
+      const confirmResetBtn = document.getElementById("confirm-reset-btn");
+      const resetMessage = document.getElementById("reset-message");
+      let currentResetEmail = null;
+      
+      function openResetModal(email) {
+        currentResetEmail = email;
+        document.getElementById("reset-user-email").textContent = email;
+        resetMessage.style.display = "none";
+        resetMessage.textContent = "";
+        resetModal.style.display = "flex";
+      }
+      
+      function closeResetModal() {
+        resetModal.style.display = "none";
+        currentResetEmail = null;
+      }
+      
+      closeResetBtn.addEventListener("click", closeResetModal);
+      cancelResetBtn.addEventListener("click", closeResetModal);
+      
+      // Click outside modal to close
+      resetModal.addEventListener("click", (e) => {
+        if (e.target === resetModal) {
+          closeResetModal();
+        }
+      });
+      
+      // Confirm password reset
+      confirmResetBtn.addEventListener("click", async () => {
+        if (!currentResetEmail) return;
+        
+        confirmResetBtn.disabled = true;
+        confirmResetBtn.textContent = "Processing...";
+        
+        try {
+          const res = await fetch("http://localhost:3000/admin/reset-password", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: 'include',
+            body: JSON.stringify({ email: currentResetEmail })
+          });
+          
+          const data = await res.json();
+          
+          if (!res.ok) {
+            throw new Error(data.error || "Failed to initiate password reset");
+          }
+          
+          resetMessage.style.display = "block";
+          resetMessage.style.background = "rgba(16, 185, 129, 0.1)";
+          resetMessage.style.border = "1px solid rgba(16, 185, 129, 0.3)";
+          resetMessage.style.color = "var(--success)";
+          resetMessage.innerHTML = `
+            <p style="margin: 0 0 0.5rem 0; font-weight: 600;">✅ Password reset initiated successfully!</p>
+            <p style="margin: 0; font-size: 0.9rem;">The user will be prompted to set a new password on their next login.</p>
+          `;
+          
+          confirmResetBtn.textContent = "Reset Initiated";
+          
+          // Close modal after 3 seconds
+          setTimeout(() => {
+            closeResetModal();
+            confirmResetBtn.disabled = false;
+            confirmResetBtn.textContent = "Confirm Reset";
+          }, 3000);
+          
+        } catch (err) {
+          resetMessage.style.display = "block";
+          resetMessage.style.background = "rgba(239, 68, 68, 0.1)";
+          resetMessage.style.border = "1px solid rgba(239, 68, 68, 0.3)";
+          resetMessage.style.color = "var(--error)";
+          resetMessage.textContent = "❌ " + err.message;
+          
+          confirmResetBtn.disabled = false;
+          confirmResetBtn.textContent = "Confirm Reset";
+        }
+      });
+    </script>
+  </body>
+</html>
