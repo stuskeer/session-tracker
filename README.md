@@ -4,13 +4,19 @@ A simple Node.js application to track and manage your kitesurf sessions.
 
 ## Features
 
-- User authentication with login system
+- User authentication with login and registration system
+- Secure password hashing with bcrypt
 - Log kitesurf session details (location, kite, duration, max jump height)
-- View all sessions in a card-based grid layout
+- View all sessions in a modern card-based grid layout with dark theme
 - Update existing sessions
 - Delete sessions
 - User-friendly session numbering (hides UUID complexity)
 - Session management with secure logout
+- **User Settings:**
+  - Manage personal quiver (collection of kites)
+  - Add and remove kites from quiver
+  - Update email address
+  - Kite selection from personal quiver when logging sessions
 
 ## Project Structure
 
@@ -162,18 +168,14 @@ aws dynamodb create-table \
   --region us-east-1
 ```
 
-**Add a test user:**
-```sh
-aws dynamodb put-item \
-  --table-name users \
-  --item '{"user_id": {"S": "test@example.com"}, "password": {"S": "password123"}}' \
-  --endpoint-url http://localhost:8000 \
-  --region us-east-1
-```
+**Note:** The users table schema includes:
+- `user_id` (String) - User's email address (primary key)
+- `password` (String) - Bcrypt hashed password
+- `account_created` (String) - UK date/time when account was created
+- `last_logon` (String) - UK date/time of last successful login
+- `quiver` (List) - Array of kite names owned by the user
 
-**Note:** For production, you should hash passwords using bcrypt. See the bcrypt section below.
-
-These commands set up the required tables locally.
+The registration process automatically initializes these fields, so you don't need to manually add them.
 
 ### 7. Connect your app
 
@@ -235,33 +237,60 @@ The backend server will:
 
 ### Authentication
 - `POST /auth/login` - Login with email and password
+- `POST /auth/register` - Register a new user account
 - `POST /auth/logout` - Logout current user
 - `GET /auth/check` - Check authentication status
 
+### User Settings (Protected - requires authentication)
+- `GET /auth/quiver` - Get user's quiver (list of kites)
+- `POST /auth/quiver` - Add a kite to quiver
+- `DELETE /auth/quiver` - Remove a kite from quiver
+- `PUT /auth/email` - Update user's email address
+
 ### Sessions (Protected - requires authentication)
-- `GET /sessions` - List all sessions
+- `GET /sessions` - List all sessions for logged-in user
 - `POST /sessions` - Create a new session
 - `GET /sessions/:id` - Get a specific session
 - `PUT /sessions/:id` - Update a session
 - `DELETE /sessions/:id` - Delete a session
 
-## Password Security with bcrypt (Recommended)
+## Password Security with bcrypt
 
-For production use, passwords should be hashed using bcrypt:
+Passwords are automatically hashed using bcrypt with 10 salt rounds during registration. The system:
 
-1. Install bcrypt:
-   ```sh
-   npm install bcrypt
-   ```
+1. Hashes passwords on registration
+2. Compares hashed passwords during login
+3. Updates `last_logon` timestamp on successful login
+4. Tracks `account_created` timestamp for each user
 
-2. Hash your password:
-   ```sh
-   node -e "const bcrypt = require('bcrypt'); bcrypt.hash('yourpassword', 10, (err, hash) => console.log(hash));"
-   ```
+All password operations use bcrypt's built-in functions for secure authentication.
 
-3. Store the hashed password in your users table instead of plain text.
+## Using the Application
 
-4. Update the authentication controller to use bcrypt.compare() for password verification.
+1. **Registration:** Visit the login page and click "Register" to create a new account with your email and password.
+
+2. **Login:** Enter your credentials on the login page. After successful login, you'll be redirected to the main session tracker.
+
+3. **Managing Your Quiver:**
+   - Click the settings icon (⚙️) in the top right
+   - Add kites to your quiver by entering the kite name (e.g., "North Reach 11m")
+   - Remove kites by clicking the "Remove" button next to each kite
+   - Your quiver is saved to your user account
+
+4. **Logging Sessions:**
+   - Expand the "Add Session" section
+   - Select a kite from your quiver dropdown
+   - Enter location, duration, and max jump height
+   - Sessions are automatically associated with your user account
+
+5. **Viewing Sessions:**
+   - Click "Fetch Sessions" to load your personal sessions
+   - Only your sessions are displayed (user-specific filtering)
+
+6. **Updating Email:**
+   - Open settings (⚙️ icon)
+   - Enter your new email address
+   - Your email is updated while maintaining all your sessions and quiver data
 
 ## Technologies Used
 

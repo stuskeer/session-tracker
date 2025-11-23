@@ -11,6 +11,12 @@ Router.post("/auth/register", authController.register);
 Router.post("/auth/logout", authController.logout);
 Router.get("/auth/check", authController.checkAuth);
 
+// User settings routes (protected)
+Router.get("/auth/quiver", requireAuth, authController.getQuiver);
+Router.post("/auth/quiver", requireAuth, authController.addKite);
+Router.delete("/auth/quiver", requireAuth, authController.removeKite);
+Router.put("/auth/email", requireAuth, authController.updateEmail);
+
 // Session routes (protected - require authentication)
 Router.route("/sessions")
   .get(requireAuth, sessionController.getAllSessions)
