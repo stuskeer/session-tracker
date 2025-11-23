@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login - Session Tracker</title>
+    <link rel="stylesheet" href="style.css" />
+    <style>
+      .login-container {
+        max-width: 440px;
+        margin: 3rem auto;
+        padding: 2.5rem;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        animation: slideUp 0.4s ease-out;
+      }
+
+      @keyframes slideUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .login-form {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+      }
+
+      .form-group {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .form-group label {
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+        font-size: 0.95rem;
+      }
+
+      .form-group input {
+        padding: 0.875rem;
+        border: 2px solid var(--border);
+        border-radius: 12px;
+        font-size: 1rem;
+        background: var(--bg-main);
+        color: var(--text-primary);
+        transition: all 0.3s ease;
+      }
+
+      .form-group input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+      }
+
+      .login-btn {
+        padding: 1rem;
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        margin-top: 0.5rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.3);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .login-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.5);
+      }
+
+      .register-btn {
+        padding: 1rem;
+        background: linear-gradient(135deg, var(--success), #059669);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        margin-top: 0.5rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .register-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.5);
+      }
+
+      .toggle-link {
+        text-align: center;
+        margin-top: 1.5rem;
+        color: var(--primary);
+        cursor: pointer;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.2s;
+        display: inline-block;
+      }
+
+      .toggle-link:hover {
+        color: var(--secondary);
+        transform: translateX(2px);
+      }
+
+      .error-message {
+        color: var(--error);
+        margin-top: 1rem;
+        text-align: center;
+        padding: 1rem;
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        border-radius: 12px;
+        font-weight: 500;
+      }
+
+      .success-message {
+        color: var(--success);
+        margin-top: 1rem;
+        text-align: center;
+        padding: 1rem;
+        background: rgba(16, 185, 129, 0.1);
+        border: 1px solid rgba(16, 185, 129, 0.3);
+        border-radius: 12px;
+        font-weight: 500;
+      }
+
+      #form-title {
+        margin-bottom: 1.5rem;
+        font-size: 2rem;
+      }
+    </style>
+  </head>
+  <body>
+    <img src="/images/logo.jpeg" alt="Session Tracker Logo" style="display:block; margin:auto; max-width:400px; margin-bottom: 2rem;" />
+    
+    <div class="login-container">
+      <h1 id="form-title">Login</h1>
+      
+      <form id="auth-form" class="login-form">
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" placeholder="Enter your email" required />
+        </div>
+        
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" placeholder="Enter your password" required />
+        </div>
+        
+        <button type="submit" id="submit-btn" class="login-btn">Login</button>
+      </form>
+      
+      <!-- Password Reset Form (hidden by default) -->
+      <form id="reset-form" class="login-form" style="display: none;">
+        <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+          <p style="margin: 0; color: var(--warning); font-weight: 600;">⚠️ Password Reset Required</p>
+          <p style="margin: 0.5rem 0 0 0; color: var(--text-secondary); font-size: 0.9rem;">An administrator has initiated a password reset. Please set a new password to continue.</p>
+        </div>
+        
+        <input type="hidden" id="reset-email" />
+        <input type="hidden" id="reset-token" />
+        
+        <div class="form-group">
+          <label for="new-password">New Password</label>
+          <input type="password" id="new-password" placeholder="Enter new password (min 8 chars)" required minlength="8" />
+        </div>
+        
+        <div class="form-group">
+          <label for="confirm-password">Confirm Password</label>
+          <input type="password" id="confirm-password" placeholder="Confirm new password" required minlength="8" />
+        </div>
+        
+        <button type="submit" class="login-btn">Set New Password</button>
+      </form>
+      
+      <div class="toggle-link" id="toggle-link">Don't have an account? Register here</div>
+      
+      <div id="auth-message"></div>
+    </div>
+
+    <script>
+      let isLoginMode = true;
+      
+      document.getElementById("toggle-link").addEventListener("click", () => {
+        isLoginMode = !isLoginMode;
+        const formTitle = document.getElementById("form-title");
+        const submitBtn = document.getElementById("submit-btn");
+        const toggleLink = document.getElementById("toggle-link");
+        
+        if (isLoginMode) {
+          formTitle.textContent = "Login";
+          submitBtn.textContent = "Login";
+          submitBtn.className = "login-btn";
+          toggleLink.textContent = "Don't have an account? Register here";
+        } else {
+          formTitle.textContent = "Register";
+          submitBtn.textContent = "Register";
+          submitBtn.className = "register-btn";
+          toggleLink.textContent = "Already have an account? Login here";
+        }
+        document.getElementById("auth-message").textContent = "";
+      });
+      
+      document.getElementById("auth-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const form = e.target;
+        const message = document.getElementById("auth-message");
+        
+        message.textContent = isLoginMode ? "Logging in..." : "Registering...";
+        message.className = "";
+        
+        const data = {
+          email: form.email.value,
+          password: form.password.value,
+        };
+        
+        const endpoint = isLoginMode ? "/auth/login" : "/auth/register";
+        
+        try {
+          const res = await fetch(`http://localhost:3000${endpoint}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: 'include',
+            body: JSON.stringify(data),
+          });
+          
+          const result = await res.json();
+          
+          if (!res.ok) {
+            message.textContent = result.error || (isLoginMode ? "Login failed" : "Registration failed");
+            message.className = "error-message";
+            return;
+          }
+          
+          if (isLoginMode) {
+            // Check if password reset is required
+            if (result.requiresReset) {
+              message.textContent = result.message;
+              message.className = "error-message";
+              message.style.background = "rgba(245, 158, 11, 0.1)";
+              message.style.borderColor = "rgba(245, 158, 11, 0.3)";
+              message.style.color = "var(--warning)";
+              
+              // Hide login form, show reset form
+              document.getElementById("auth-form").style.display = "none";
+              document.getElementById("toggle-link").style.display = "none";
+              document.getElementById("reset-form").style.display = "flex";
+              document.getElementById("form-title").textContent = "Reset Password";
+              
+              // Store reset info
+              document.getElementById("reset-email").value = result.email;
+              document.getElementById("reset-token").value = result.resetToken;
+              return;
+            }
+            
+            message.textContent = "✅ Login successful! Redirecting...";
+            message.className = "success-message";
+            
+            // Redirect based on user role after successful login
+            setTimeout(() => {
+              if (result.user && result.user.role === 'admin') {
+                window.location.href = "/admin.html";
+              } else {
+                window.location.href = "/index.html";
+              }
+            }, 1000);
+          } else {
+            message.textContent = "✅ Registration successful! You can now login.";
+            message.className = "success-message";
+            
+            // Switch to login mode
+            setTimeout(() => {
+              isLoginMode = true;
+              document.getElementById("form-title").textContent = "Login";
+              document.getElementById("submit-btn").textContent = "Login";
+              document.getElementById("submit-btn").className = "login-btn";
+              document.getElementById("toggle-link").textContent = "Don't have an account? Register here";
+              form.reset();
+              message.textContent = "";
+            }, 2000);
+          }
+          
+        } catch (err) {
+          message.textContent = "❌ Error: " + err.message;
+          message.className = "error-message";
+        }
+      });
+      
+      // Password reset form handler
+      document.getElementById("reset-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const message = document.getElementById("auth-message");
+        
+        const email = document.getElementById("reset-email").value;
+        const resetToken = document.getElementById("reset-token").value;
+        const newPassword = document.getElementById("new-password").value;
+        const confirmPassword = document.getElementById("confirm-password").value;
+        
+        // Validate passwords match
+        if (newPassword !== confirmPassword) {
+          message.textContent = "❌ Passwords do not match";
+          message.className = "error-message";
+          return;
+        }
+        
+        message.textContent = "Setting new password...";
+        message.className = "";
+        
+        try {
+          const res = await fetch("http://localhost:3000/auth/reset-password/complete", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: email,
+              resetToken: resetToken,
+              newPassword: newPassword
+            }),
+          });
+          
+          const result = await res.json();
+          
+          if (!res.ok) {
+            message.textContent = "❌ " + (result.error || "Password reset failed");
+            message.className = "error-message";
+            return;
+          }
+          
+          message.textContent = "✅ Password reset successful! Logging you in...";
+          message.className = "success-message";
+          
+          // Auto-login after successful reset
+          setTimeout(async () => {
+            try {
+              const loginRes = await fetch("http://localhost:3000/auth/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: 'include',
+                body: JSON.stringify({
+                  email: email,
+                  password: newPassword
+                }),
+              });
+              
+              const loginResult = await loginRes.json();
+              
+              if (loginRes.ok) {
+                if (loginResult.user && loginResult.user.role === 'admin') {
+                  window.location.href = "/admin.html";
+                } else {
+                  window.location.href = "/index.html";
+                }
+              } else {
+                message.textContent = "✅ Password reset successful! Please login with your new password.";
+                // Show login form again
+                document.getElementById("reset-form").style.display = "none";
+                document.getElementById("auth-form").style.display = "flex";
+                document.getElementById("toggle-link").style.display = "block";
+                document.getElementById("form-title").textContent = "Login";
+                document.getElementById("auth-form").reset();
+              }
+            } catch (err) {
+              message.textContent = "✅ Password reset successful! Please login with your new password.";
+              // Show login form again
+              document.getElementById("reset-form").style.display = "none";
+              document.getElementById("auth-form").style.display = "flex";
+              document.getElementById("toggle-link").style.display = "block";
+              document.getElementById("form-title").textContent = "Login";
+              document.getElementById("auth-form").reset();
+            }
+          }, 1500);
+          
+        } catch (err) {
+          message.textContent = "❌ Error: " + err.message;
+          message.className = "error-message";
+        }
+      });
+    </script>
+  </body>
+</html>

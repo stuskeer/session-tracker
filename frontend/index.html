@@ -7,10 +7,90 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <!-- Logo image displayed at the top -->
-    <img src="/images/logo.jpeg" alt="Session Tracker Logo" style="display:block; margin:auto; max-width:400px;" />
+    <!-- Top right hamburger menu -->
+    <div style="position: absolute; top: 1rem; right: 1rem; z-index: 100;">
+      <button id="hamburger-btn" style="background: var(--bg-card); border: 1px solid var(--border); padding: 0.7rem; border-radius: 8px; cursor: pointer; display: flex; flex-direction: column; gap: 4px; width: 40px; height: 40px; justify-content: center; align-items: center;">
+        <span style="display: block; width: 20px; height: 2px; background: var(--text-primary); transition: 0.3s;"></span>
+        <span style="display: block; width: 20px; height: 2px; background: var(--text-primary); transition: 0.3s;"></span>
+        <span style="display: block; width: 20px; height: 2px; background: var(--text-primary); transition: 0.3s;"></span>
+      </button>
+      
+      <!-- Dropdown menu -->
+      <div id="menu-dropdown" style="display: none; position: absolute; top: 50px; right: 0; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; min-width: 180px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
+        <button id="insights-btn" style="width: 100%; padding: 0.8rem 1rem; background: none; border: none; color: var(--text-primary); cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-size: 0.95rem; border-bottom: 1px solid var(--border); border-radius: 12px 12px 0 0;">
+          <span style="font-size: 1.2em;">📈</span> Insights
+        </button>
+        <button id="settings-btn" style="width: 100%; padding: 0.8rem 1rem; background: none; border: none; color: var(--text-primary); cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-size: 0.95rem; border-bottom: 1px solid var(--border); border-radius: 0;">
+          <span style="font-size: 1.2em;">⚙️</span> Settings
+        </button>
+        <button id="logout-btn" style="width: 100%; padding: 0.8rem 1rem; background: none; border: none; color: var(--error); cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-size: 0.95rem; border-radius: 0 0 12px 12px;">
+          <span style="font-size: 1.2em;">🚪</span> Logout
+        </button>
+      </div>
+    </div>
     
     <h1>Kitesurf Session Tracker</h1>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center;">
+      <div style="background: var(--bg-card); padding: 2rem; border-radius: 20px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto; border: 1px solid var(--border);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+          <h2 style="margin: 0; color: var(--text-primary);">Settings</h2>
+          <button id="close-settings" style="background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; padding: 0; width: 30px; height: 30px;">&times;</button>
+        </div>
+
+        <!-- Update Email Section -->
+        <details style="margin-bottom: 1.5rem; background: var(--bg-main); padding: 1rem; border-radius: 12px; border: 1px solid var(--border);">
+          <summary style="cursor: pointer; font-weight: 600; color: var(--text-primary);">📧 Update Email</summary>
+          <form id="update-email-form" style="margin-top: 1rem; display: flex; flex-direction: column; gap: 1rem;">
+            <div>
+              <label for="new-email" style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary);">New Email</label>
+              <input type="email" id="new-email" name="new-email" placeholder="Enter new email" required style="width: 100%;" />
+            </div>
+            <button type="submit" style="width: 100%;">Update Email</button>
+          </form>
+          <div id="email-update-message" style="margin-top: 1rem;"></div>
+        </details>
+
+        <!-- Update Password Section -->
+        <details style="margin-bottom: 1.5rem; background: var(--bg-main); padding: 1rem; border-radius: 12px; border: 1px solid var(--border);">
+          <summary style="cursor: pointer; font-weight: 600; color: var(--text-primary);">🔒 Update Password</summary>
+          <form id="update-password-form" style="margin-top: 1rem; display: flex; flex-direction: column; gap: 1rem;">
+            <div>
+              <label for="current-password" style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary);">Current Password</label>
+              <input type="password" id="current-password" name="current-password" placeholder="Enter current password" required style="width: 100%;" />
+            </div>
+            <div>
+              <label for="new-password" style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary);">New Password</label>
+              <input type="password" id="new-password" name="new-password" placeholder="Enter new password (min 8 chars)" required minlength="8" style="width: 100%;" />
+            </div>
+            <div>
+              <label for="confirm-password" style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary);">Confirm New Password</label>
+              <input type="password" id="confirm-password" name="confirm-password" placeholder="Confirm new password" required minlength="8" style="width: 100%;" />
+            </div>
+            <button type="submit" style="width: 100%;">Update Password</button>
+          </form>
+          <div id="password-update-message" style="margin-top: 1rem;"></div>
+        </details>
+
+        <!-- Manage Quiver Section -->
+        <details open style="background: var(--bg-main); padding: 1rem; border-radius: 12px; border: 1px solid var(--border);">
+          <summary style="cursor: pointer; font-weight: 600; color: var(--text-primary);">🪁 Manage Quiver</summary>
+          
+          <!-- Add Kite Form -->
+          <form id="add-kite-form" style="margin-top: 1rem; display: flex; gap: 0.5rem;">
+            <input type="text" id="new-kite" name="kiteName" placeholder="e.g., North Reach 11m" required style="flex: 1;" />
+            <button type="submit" style="padding: 0.5rem 1rem;">Add</button>
+          </form>
+          <div id="kite-add-message" style="margin-top: 0.5rem;"></div>
+
+          <!-- Kites List -->
+          <div id="quiver-list" style="margin-top: 1rem;">
+            <p style="color: var(--text-muted);">Loading quiver...</p>
+          </div>
+        </details>
+      </div>
+    </div>
     
     <!-- Button to fetch and display all sessions -->
     <button id="fetch-btn">Fetch Sessions</button>
@@ -23,11 +103,30 @@
     <!-- Collapsible section for adding a new session -->
     <details style="margin-top:2em;">
       <summary style="font-size:1.1em; cursor:pointer;">➕ Add Session</summary>
-      <form id="add-session-form" style="margin-top:1em;">
-        <input type="text" name="location" placeholder="Location" required />
-        <input type="text" name="kite" placeholder="Kite" required />
-        <input type="number" name="max_jump" placeholder="Max Jump" required />
-        <button type="submit">Add Session</button>
+      <form id="add-session-form" style="margin-top:1em; display:flex; flex-direction:column; gap:1em; max-width:400px; margin-left:auto; margin-right:auto;">
+        <div style="display:flex; flex-direction:column;">
+          <label for="add-location" style="margin-bottom:0.3em; font-weight:bold;">Location</label>
+          <input type="text" id="add-location" name="location" placeholder="e.g., Rest Bay" required />
+        </div>
+        <div style="display:flex; flex-direction:column;">
+          <label for="add-date" style="margin-bottom:0.3em; font-weight:bold;">Date</label>
+          <input type="date" id="add-date" name="date" required />
+        </div>
+        <div style="display:flex; flex-direction:column;">
+          <label for="add-kite" style="margin-bottom:0.3em; font-weight:bold;">Kite</label>
+          <select id="add-kite" name="kite" required>
+            <option value="">Select a kite...</option>
+          </select>
+        </div>
+        <div style="display:flex; flex-direction:column;">
+          <label for="add-duration" style="margin-bottom:0.3em; font-weight:bold;">Duration (HH:MM)</label>
+          <input type="time" id="add-duration" name="duration" placeholder="hh:mm" value="00:00" required />
+        </div>
+        <div style="display:flex; flex-direction:column;">
+          <label for="add-max-jump" style="margin-bottom:0.3em; font-weight:bold;">Max Jump (meters)</label>
+          <input type="number" id="add-max-jump" name="max_jump" placeholder="e.g., 15.7" step="0.1" min="0" required />
+        </div>
+        <button type="submit" style="margin-top:0.5em;">Add Session</button>
       </form>
       <!-- Status message displayed after attempting to add a session -->
       <div id="add-session-message"></div>
@@ -38,7 +137,7 @@
       <summary style="font-size:1.1em; cursor:pointer;">🗑️ Remove Session</summary>
       <form id="remove-session-form" style="margin-top:1em;">
         <!-- User enters the simple display number (1, 2, 3...), not the UUID -->
-        <input type="number" name="id" placeholder="Session # to remove" required />
+        <input type="number" name="id" placeholder="Session ID to remove" required />
         <button type="submit">Remove Session</button>
       </form>
       <!-- Status message displayed after attempting to remove a session -->
@@ -48,18 +147,94 @@
     <!-- Collapsible section for updating an existing session -->
     <details style="margin-top:2em;">
       <summary style="font-size:1.1em; cursor:pointer;">✏️ Update Session</summary>
-      <form id="update-session-form" style="margin-top:1em;">
+      <form id="update-session-form" style="margin-top:1em; display:flex; flex-direction:column; gap:1em; max-width:400px; margin-left:auto; margin-right:auto;">
         <!-- User enters the simple display number (1, 2, 3...), not the UUID -->
-        <input type="number" name="id" placeholder="Session # to update" required />
-        <input type="text" name="location" placeholder="New Location (optional)" />
-        <input type="text" name="kite" placeholder="New Kite (optional)" />
-        <input type="number" name="max_jump" placeholder="New Max Jump (optional)" />
-        <button type="submit">Update Session</button>
+        <div style="display:flex; flex-direction:column;">
+          <label for="update-id" style="margin-bottom:0.3em; font-weight:bold;">Session ID</label>
+          <input type="number" id="update-id" name="id" placeholder="Enter session ID" required />
+        </div>
+        <div style="display:flex; flex-direction:column;">
+          <label for="update-location" style="margin-bottom:0.3em; font-weight:bold;">Location (optional)</label>
+          <input type="text" id="update-location" name="location" placeholder="New location" />
+        </div>
+        <div style="display:flex; flex-direction:column;">
+          <label for="update-date" style="margin-bottom:0.3em; font-weight:bold;">Date (optional)</label>
+          <input type="date" id="update-date" name="date" />
+        </div>
+        <div style="display:flex; flex-direction:column;">
+          <label for="update-kite" style="margin-bottom:0.3em; font-weight:bold;">Kite (optional)</label>
+          <select id="update-kite" name="kite">
+            <option value="">Select a kite...</option>
+          </select>
+        </div>
+        <div style="display:flex; flex-direction:column;">
+          <label for="update-duration" style="margin-bottom:0.3em; font-weight:bold;">Duration (HH:MM Optional)</label>
+          <input type="time" id="update-duration" name="duration" placeholder="hh:mm" value="00:00" />
+        </div>
+        <div style="display:flex; flex-direction:column;">
+          <label for="update-max-jump" style="margin-bottom:0.3em; font-weight:bold;">Max Jump (optional)</label>
+          <input type="number" id="update-max-jump" name="max_jump" placeholder="New max jump" step="0.1" min="0" />
+        </div>
+        <button type="submit" style="margin-top:0.5em;">Update Session</button>
       </form>
       <!-- Status message displayed after attempting to update a session -->
       <div id="update-session-message"></div>
     </details>
     <script>
+      // Check authentication on page load
+      async function checkAuth() {
+        try {
+          const res = await fetch("http://localhost:3000/auth/check", {
+            credentials: 'include'
+          });
+          const data = await res.json();
+          if (!data.authenticated) {
+            window.location.href = "/login.html";
+          }
+        } catch (err) {
+          console.error("Auth check failed:", err);
+          window.location.href = "/login.html";
+        }
+      }
+      
+      // Run auth check on page load
+      checkAuth();
+      
+      // Hamburger menu toggle
+      const hamburgerBtn = document.getElementById("hamburger-btn");
+      const menuDropdown = document.getElementById("menu-dropdown");
+      
+      hamburgerBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        menuDropdown.style.display = menuDropdown.style.display === "none" ? "block" : "none";
+      });
+      
+      // Close menu when clicking outside
+      document.addEventListener("click", (e) => {
+        if (!hamburgerBtn.contains(e.target) && !menuDropdown.contains(e.target)) {
+          menuDropdown.style.display = "none";
+        }
+      });
+
+      // Insights button handler
+      document.getElementById("insights-btn").addEventListener("click", () => {
+        window.location.href = "/insights.html";
+      });
+      
+      // Logout handler
+      document.getElementById("logout-btn").addEventListener("click", async () => {
+        menuDropdown.style.display = "none";
+        try {
+          await fetch("http://localhost:3000/auth/logout", {
+            method: "POST",
+            credentials: 'include'
+          });
+          window.location.href = "/login.html";
+        } catch (err) {
+          console.error("Logout failed:", err);
+        }
+      });
+      
       // Map to store relationship between user-friendly display IDs (1, 2, 3...) and actual UUIDs
       // This hides complex UUIDs from the user while maintaining backend compatibility
       let sessionIdMap = new Map();
@@ -73,7 +248,9 @@
           output.textContent = "Fetching data...";
           try {
             // GET request to fetch all sessions from the API
-            const res = await fetch("http://localhost:3000/sessions");
+            const res = await fetch("http://localhost:3000/sessions", {
+              credentials: 'include'
+            });
             if (!res.ok) throw new Error("HTTP " + res.status);
             const data = await res.json();
             
@@ -86,23 +263,35 @@
             // Clear the ID map and rebuild it with fresh data
             sessionIdMap.clear();
             
-            // Build HTML grid layout to display sessions as cards
-            let html = '<div class="sessions-grid">';
+            // Build HTML table to display sessions
+            let html = `<table class="sessions-table">
+              <thead>
+                <tr>
+                  <th>Session ID</th>
+                  <th>Date</th>
+                  <th>Location</th>
+                  <th>Kite</th>
+                  <th>Duration</th>
+                  <th>Max Jump</th>
+                </tr>
+              </thead>
+              <tbody>`;
             data.forEach((session, index) => {
               // Create simple sequential display ID (1, 2, 3...)
               const displayId = index + 1;
               // Map the display ID to the real UUID for later use
               sessionIdMap.set(displayId, session.id);
               
-              // Create a card for each session with location, kite, jump height, and display ID
-              html += `<div class="session-card">
-                <h3>📍 ${session.location}</h3>
-                <p><strong>Kite:</strong> ${session.kite}</p>
-                <p><strong>Max Jump:</strong> ${session.max_jump}m</p>
-                <p class="session-id"><strong>Session #:</strong> ${displayId}</p>
-              </div>`;
+              html += `<tr>
+                <td>${displayId}</td>
+                <td>${session.date ? new Date(session.date).toLocaleDateString('en-GB') : '-'}</td>
+                <td>📍 ${session.location}</td>
+                <td>${session.kite}</td>
+                <td>${session.duration || '-'}</td>
+                <td>${session.max_jump}m</td>
+              </tr>`;
             });
-            html += '</div>';
+            html += '</tbody></table>';
             output.innerHTML = html;
           } catch (err) {
             // Display error message if fetch fails
@@ -121,7 +310,9 @@
           const data = {
             id: form.id.value,
             location: form.location.value,
+            date: form.date.value,
             kite: form.kite.value,
+            duration: form.duration.value,
             max_jump: Number(form.max_jump.value),
           };
           try {
@@ -129,6 +320,7 @@
             const res = await fetch("http://localhost:3000/sessions", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
+              credentials: 'include',
               body: JSON.stringify(data),
             });
             if (!res.ok) throw new Error("HTTP " + res.status);
@@ -167,6 +359,7 @@
             // DELETE request using the real UUID
             const res = await fetch(`http://localhost:3000/sessions/${realId}`, {
                 method: "DELETE",
+                credentials: 'include',
             });
             if (!res.ok) throw new Error("HTTP " + res.status);
             message.textContent = "✅ Session removed!";
@@ -203,8 +396,14 @@
         if (form.location.value.trim()) {
           data.location = form.location.value;
         }
+        if (form.date.value) {
+          data.date = form.date.value;
+        }
         if (form.kite.value.trim()) {
           data.kite = form.kite.value;
+        }
+        if (form.duration.value) {
+          data.duration = form.duration.value;
         }
         if (form.max_jump.value) {
           data.max_jump = Number(form.max_jump.value);
@@ -221,6 +420,7 @@
           const res = await fetch(`http://localhost:3000/sessions/${realId}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
+            credentials: 'include',
             body: JSON.stringify(data),
           });
           if (!res.ok) throw new Error("HTTP " + res.status);
@@ -232,6 +432,223 @@
           message.textContent = "❌ Could not update session (" + err.message + ")";
         }
       });
+      
+      // ============ Settings Modal Functionality ============
+      const settingsBtn = document.getElementById("settings-btn");
+      const settingsModal = document.getElementById("settings-modal");
+      const closeSettingsBtn = document.getElementById("close-settings");
+      
+      // Open settings modal
+      settingsBtn.addEventListener("click", () => {
+        menuDropdown.style.display = "none";
+        settingsModal.style.display = "flex";
+        loadQuiver();
+      });
+      
+      // Check for hash on page load to open settings if navigating from insights
+      if (window.location.hash === '#settings') {
+        settingsModal.style.display = "flex";
+        loadQuiver();
+        // Remove hash from URL
+        history.replaceState(null, null, ' ');
+      }
+      
+      // Close settings modal
+      closeSettingsBtn.addEventListener("click", () => {
+        settingsModal.style.display = "none";
+      });
+      
+      // Close modal when clicking outside
+      settingsModal.addEventListener("click", (e) => {
+        if (e.target === settingsModal) {
+          settingsModal.style.display = "none";
+        }
+      });
+      
+      // Load user's quiver (list of kites)
+      async function loadQuiver() {
+        try {
+          const res = await fetch("http://localhost:3000/auth/quiver", {
+            credentials: 'include'
+          });
+          if (!res.ok) throw new Error("Failed to load quiver");
+          const data = await res.json();
+          displayQuiver(data.quiver || []);
+        } catch (err) {
+          console.error("Error loading quiver:", err);
+        }
+      }
+      
+      // Display quiver list in settings modal
+      function displayQuiver(quiver) {
+        const quiverList = document.getElementById("quiver-list");
+        if (quiver.length === 0) {
+          quiverList.innerHTML = '<p style="color:#888;">No kites in quiver yet.</p>';
+        } else {
+          let html = '<ul style="list-style:none; padding:0;">';
+          quiver.forEach(kite => {
+            html += `<li style="display:flex; justify-content:space-between; align-items:center; padding:0.5em; margin-bottom:0.5em; background:rgba(255,255,255,0.05); border-radius:4px;">
+              <span>${kite}</span>
+              <button class="remove-kite-btn" data-kite="${kite}" style="background:#e74c3c; color:white; border:none; padding:0.3em 0.6em; border-radius:4px; cursor:pointer;">Remove</button>
+            </li>`;
+          });
+          html += '</ul>';
+          quiverList.innerHTML = html;
+          
+          // Add event listeners to remove buttons
+          document.querySelectorAll(".remove-kite-btn").forEach(btn => {
+            btn.addEventListener("click", async () => {
+              const kite = btn.dataset.kite;
+              await removeKite(kite);
+            });
+          });
+        }
+        
+        // Update kite dropdowns in add/update forms
+        updateKiteDropdowns(quiver);
+      }
+      
+      // Update kite dropdowns with current quiver
+      function updateKiteDropdowns(quiver) {
+        const addKiteSelect = document.getElementById("add-kite");
+        const updateKiteSelect = document.getElementById("update-kite");
+        
+        // Clear existing options except the first placeholder
+        addKiteSelect.innerHTML = '<option value="">Select a kite...</option>';
+        updateKiteSelect.innerHTML = '<option value="">Select a kite...</option>';
+        
+        // Add options from quiver
+        quiver.forEach(kite => {
+          const option1 = document.createElement("option");
+          option1.value = kite;
+          option1.textContent = kite;
+          addKiteSelect.appendChild(option1);
+          
+          const option2 = document.createElement("option");
+          option2.value = kite;
+          option2.textContent = kite;
+          updateKiteSelect.appendChild(option2);
+        });
+      }
+      
+      // Add kite to quiver
+      document.getElementById("add-kite-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const form = e.target;
+        const kiteName = form.kiteName.value.trim();
+        
+        if (!kiteName) return;
+        
+        try {
+          const res = await fetch("http://localhost:3000/auth/quiver", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: 'include',
+            body: JSON.stringify({ kite: kiteName })
+          });
+          
+          if (!res.ok) throw new Error("Failed to add kite");
+          
+          form.reset();
+          await loadQuiver(); // Reload quiver list
+        } catch (err) {
+          alert("Could not add kite: " + err.message);
+        }
+      });
+      
+      // Remove kite from quiver
+      async function removeKite(kiteName) {
+        if (!confirm(`Remove ${kiteName} from quiver?`)) return;
+        
+        try {
+          const res = await fetch("http://localhost:3000/auth/quiver", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            credentials: 'include',
+            body: JSON.stringify({ kite: kiteName })
+          });
+          
+          if (!res.ok) throw new Error("Failed to remove kite");
+          
+          await loadQuiver(); // Reload quiver list
+        } catch (err) {
+          alert("Could not remove kite: " + err.message);
+        }
+      }
+      
+      // Update email
+      document.getElementById("update-email-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const form = e.target;
+        const newEmail = form["new-email"].value.trim();
+        
+        if (!newEmail) return;
+        
+        try {
+          const res = await fetch("http://localhost:3000/auth/email", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            credentials: 'include',
+            body: JSON.stringify({ email: newEmail })
+          });
+          
+          if (!res.ok) {
+            const data = await res.json();
+            throw new Error(data.message || "Failed to update email");
+          }
+          
+          alert("Email updated successfully!");
+          form.reset();
+        } catch (err) {
+          alert("Could not update email: " + err.message);
+        }
+      });
+
+      // Update password
+      document.getElementById("update-password-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const form = e.target;
+        const currentPassword = form["current-password"].value;
+        const newPassword = form["new-password"].value;
+        const confirmPassword = form["confirm-password"].value;
+        
+        // Check if new passwords match
+        if (newPassword !== confirmPassword) {
+          alert("New passwords do not match!");
+          return;
+        }
+        
+        // Check password requirements
+        if (newPassword.length < 8) {
+          alert("New password must be at least 8 characters long");
+          return;
+        }
+        
+        try {
+          const res = await fetch("http://localhost:3000/auth/password", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            credentials: 'include',
+            body: JSON.stringify({ 
+              currentPassword: currentPassword,
+              newPassword: newPassword 
+            })
+          });
+          
+          if (!res.ok) {
+            const data = await res.json();
+            throw new Error(data.error || "Failed to update password");
+          }
+          
+          alert("Password updated successfully!");
+          form.reset();
+        } catch (err) {
+          alert("Could not update password: " + err.message);
+        }
+      });
+      
+      // Load quiver on page load to populate dropdowns
+      loadQuiver();
     </script>
   </body>
 </html>

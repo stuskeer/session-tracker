@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Panel - Session Tracker</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <!-- Top right hamburger menu -->
+    <div style="position: absolute; top: 1rem; right: 1rem; z-index: 100;">
+      <button id="hamburger-btn" style="background: var(--bg-card); border: 1px solid var(--border); padding: 0.7rem; border-radius: 8px; cursor: pointer; display: flex; flex-direction: column; gap: 4px; width: 40px; height: 40px; justify-content: center; align-items: center;">
+        <span style="display: block; width: 20px; height: 2px; background: var(--text-primary); transition: 0.3s;"></span>
+        <span style="display: block; width: 20px; height: 2px; background: var(--text-primary); transition: 0.3s;"></span>
+        <span style="display: block; width: 20px; height: 2px; background: var(--text-primary); transition: 0.3s;"></span>
+      </button>
+      
+      <!-- Dropdown menu -->
+      <div id="menu-dropdown" style="display: none; position: absolute; top: 50px; right: 0; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; min-width: 180px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
+        <button id="logout-btn" style="width: 100%; padding: 0.8rem 1rem; background: none; border: none; color: var(--error); cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-size: 0.95rem; border-radius: 12px;">
+          <span style="font-size: 1.2em;">🚪</span> Logout
+        </button>
+      </div>
+    </div>
+    
+    <!-- Logo image displayed at the top -->
+    <img src="/images/logo.jpeg" alt="Session Tracker Logo" style="display:block; margin:auto; max-width:400px;" />
+    
+    <div class="container">
+      <h1>🔐 Admin Panel</h1>
+      
+      <button id="fetch-users-btn" style="display: block; margin: 2rem auto;">Fetch All Users</button>
+      
+      <div id="users-output" style="display: none; margin-top: 2rem;">
+        <h2 style="color: var(--text-primary); margin-bottom: 1rem;">User Management</h2>
+        <div id="users-table-container"></div>
+      </div>
+      
+      <!-- Password Reset Modal -->
+      <div id="reset-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center;">
+        <div style="background: var(--bg-card); padding: 2rem; border-radius: 20px; max-width: 500px; width: 90%; border: 1px solid var(--border);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <h2 style="margin: 0; color: var(--text-primary);">Initiate Password Reset</h2>
+            <button id="close-reset-modal" style="background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; padding: 0; width: 30px; height: 30px;">&times;</button>
+          </div>
+          
+          <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+            User: <strong id="reset-user-email" style="color: var(--text-primary);"></strong>
+          </p>
+          
+          <p style="color: var(--warning); margin-bottom: 1rem; font-size: 0.9rem;">
+            ⚠️ This will generate a reset token. The user will be required to set a new password on their next login.
+          </p>
+          
+          <div style="display: flex; gap: 1rem;">
+            <button id="confirm-reset-btn" style="flex: 1; background: linear-gradient(135deg, var(--warning), #f97316);">
+              Confirm Reset
+            </button>
+            <button id="cancel-reset-btn" style="flex: 1; background: var(--bg-main); color: var(--text-primary);">
+              Cancel
+            </button>
+          </div>
+          
+          <div id="reset-message" style="margin-top: 1rem; padding: 1rem; border-radius: 8px; display: none;"></div>
+        </div>
+      </div>
+      
+      <!-- User Sessions Modal -->
+      <div id="sessions-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; overflow-y: auto; padding: 2rem;">
+        <div style="background: var(--bg-card); padding: 2rem; border-radius: 20px; max-width: 1200px; margin: 0 auto; border: 1px solid var(--border);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <div>
+              <h2 style="margin: 0 0 0.5rem 0; color: var(--text-primary);">User Sessions</h2>
+              <p style="margin: 0; color: var(--text-secondary);" id="sessions-user-email"></p>
+            </div>
+            <button id="close-sessions-modal" style="background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; padding: 0; width: 30px; height: 30px;">&times;</button>
+          </div>
+          
+          <div id="sessions-content" style="margin-top: 1rem;">
+            <p>Loading sessions...</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Edit Session Modal -->
+      <div id="edit-session-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1001; justify-content: center; align-items: center;">
+        <div style="background: var(--bg-card); padding: 2rem; border-radius: 20px; max-width: 500px; width: 90%; border: 1px solid var(--border);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <h2 style="margin: 0; color: var(--text-primary);">Edit Session</h2>
+            <button id="close-edit-modal" style="background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; padding: 0; width: 30px; height: 30px;">&times;</button>
+          </div>
+          
+          <form id="edit-session-form" style="display: flex; flex-direction: column; gap: 1rem;">
+            <input type="hidden" id="edit-session-id" />
+            
+            <div>
+              <label style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary);">Date (DD-MM-YYYY)</label>
+              <input type="text" id="edit-date" required placeholder="DD-MM-YYYY" style="width: 100%; padding: 0.8rem; background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary);" />
+            </div>
+            
+            <div>
+              <label style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary);">Location</label>
+              <input type="text" id="edit-location" required style="width: 100%; padding: 0.8rem; background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary);" />
+            </div>
+            
+            <div>
+              <label style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary);">Kite</label>
+              <input type="text" id="edit-kite" required style="width: 100%; padding: 0.8rem; background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary);" />
+            </div>
+            
+            <div>
+              <label style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary);">Duration (HH:MM)</label>
+              <input type="text" id="edit-duration" required placeholder="HH:MM" style="width: 100%; padding: 0.8rem; background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary);" />
+            </div>
+            
+            <div>
+              <label style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary);">Max Jump (m)</label>
+              <input type="number" id="edit-max-jump" required min="0" max="100" step="0.1" style="width: 100%; padding: 0.8rem; background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary);" />
+            </div>
+            
+            <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+              <button type="submit" style="flex: 1; background: linear-gradient(135deg, var(--primary), #3b82f6);">
+                Save Changes
+              </button>
+              <button type="button" id="cancel-edit-btn" style="flex: 1; background: var(--bg-main); color: var(--text-primary);">
+                Cancel
+              </button>
+            </div>
+            
+            <div id="edit-message" style="margin-top: 1rem; padding: 1rem; border-radius: 8px; display: none;"></div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Check authentication on page load
+      async function checkAuth() {
+        try {
+          const res = await fetch("http://localhost:3000/auth/check", {
+            credentials: 'include'
+          });
+          const data = await res.json();
+          if (!data.authenticated) {
+            window.location.href = "/login.html";
+          }
+        } catch (err) {
+          console.error("Auth check failed:", err);
+          window.location.href = "/login.html";
+        }
+      }
+      
+      // Run auth check on page load
+      checkAuth();
+      
+      // Hamburger menu toggle
+      const hamburgerBtn = document.getElementById("hamburger-btn");
+      const menuDropdown = document.getElementById("menu-dropdown");
+      
+      hamburgerBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        menuDropdown.style.display = menuDropdown.style.display === "none" ? "block" : "none";
+      });
+      
+      // Close menu when clicking outside
+      document.addEventListener("click", (e) => {
+        if (!hamburgerBtn.contains(e.target) && !menuDropdown.contains(e.target)) {
+          menuDropdown.style.display = "none";
+        }
+      });
+      
+      // Logout handler
+      document.getElementById("logout-btn").addEventListener("click", async () => {
+        menuDropdown.style.display = "none";
+        try {
+          await fetch("http://localhost:3000/auth/logout", {
+            method: "POST",
+            credentials: 'include'
+          });
+          window.location.href = "/login.html";
+        } catch (err) {
+          console.error("Logout failed:", err);
+        }
+      });
+      
+      // Fetch all users
+      document.getElementById("fetch-users-btn").addEventListener("click", async () => {
+        const output = document.getElementById("users-output");
+        const container = document.getElementById("users-table-container");
+        
+        output.style.display = "block";
+        container.innerHTML = "<p>Loading users...</p>";
+        
+        try {
+          const res = await fetch("http://localhost:3000/admin/users", {
+            credentials: 'include'
+          });
+          
+          if (!res.ok) {
+            if (res.status === 403) {
+              throw new Error("Access denied. Admin privileges required.");
+            }
+            throw new Error("HTTP " + res.status);
+          }
+          
+          const data = await res.json();
+          
+          if (data.users.length === 0) {
+            container.innerHTML = "<p>No users found.</p>";
+            return;
+          }
+          
+          // Build users table
+          let html = `<table class="sessions-table">
+            <thead>
+              <tr>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Account Created</th>
+                <th>Last Login</th>
+                <th>Kites</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>`;
+          
+          data.users.forEach(user => {
+            html += `<tr class="user-row" data-userid="${user.user_id}" data-email="${user.email}" style="cursor: pointer;">
+              <td>${user.email}</td>
+              <td><span style="color: ${user.role === 'admin' ? 'var(--warning)' : 'var(--success)'}; font-weight: 600;">${user.role}</span></td>
+              <td>${user.account_created || '-'}</td>
+              <td>${user.last_logon || 'Never'}</td>
+              <td>${user.quiver_count}</td>
+              <td>
+                <button class="reset-password-btn" data-email="${user.email}" style="padding: 0.5rem 1rem; font-size: 0.85rem; background: linear-gradient(135deg, var(--warning), #f97316);">
+                  Reset Password
+                </button>
+              </td>
+            </tr>`;
+          });
+          
+          html += '</tbody></table>';
+          container.innerHTML = html;
+          
+          // Add event listeners to user rows
+          document.querySelectorAll('.user-row').forEach(row => {
+            row.addEventListener('click', (e) => {
+              // Don't open sessions if clicking the reset password button
+              if (e.target.classList.contains('reset-password-btn')) {
+                return;
+              }
+              const userId = row.getAttribute('data-userid');
+              const email = row.getAttribute('data-email');
+              openSessionsModal(userId, email);
+            });
+          });
+          
+          // Add event listeners to reset password buttons
+          document.querySelectorAll('.reset-password-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              const email = e.target.getAttribute('data-email');
+              openResetModal(email);
+            });
+          });
+          
+        } catch (err) {
+          container.innerHTML = `<p style="color: var(--error);">❌ ${err.message}</p>`;
+        }
+      });
+      
+      // Password reset modal functionality
+      const resetModal = document.getElementById("reset-modal");
+      const closeResetBtn = document.getElementById("close-reset-modal");
+      const cancelResetBtn = document.getElementById("cancel-reset-btn");
+      const confirmResetBtn = document.getElementById("confirm-reset-btn");
+      const resetMessage = document.getElementById("reset-message");
+      let currentResetEmail = null;
+      
+      function openResetModal(email) {
+        currentResetEmail = email;
+        document.getElementById("reset-user-email").textContent = email;
+        resetMessage.style.display = "none";
+        resetMessage.textContent = "";
+        resetModal.style.display = "flex";
+      }
+      
+      function closeResetModal() {
+        resetModal.style.display = "none";
+        currentResetEmail = null;
+      }
+      
+      closeResetBtn.addEventListener("click", closeResetModal);
+      cancelResetBtn.addEventListener("click", closeResetModal);
+      
+      // Click outside modal to close
+      resetModal.addEventListener("click", (e) => {
+        if (e.target === resetModal) {
+          closeResetModal();
+        }
+      });
+      
+      // Confirm password reset
+      confirmResetBtn.addEventListener("click", async () => {
+        if (!currentResetEmail) return;
+        
+        confirmResetBtn.disabled = true;
+        confirmResetBtn.textContent = "Processing...";
+        
+        try {
+          const res = await fetch("http://localhost:3000/admin/reset-password", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: 'include',
+            body: JSON.stringify({ email: currentResetEmail })
+          });
+          
+          const data = await res.json();
+          
+          if (!res.ok) {
+            throw new Error(data.error || "Failed to initiate password reset");
+          }
+          
+          resetMessage.style.display = "block";
+          resetMessage.style.background = "rgba(16, 185, 129, 0.1)";
+          resetMessage.style.border = "1px solid rgba(16, 185, 129, 0.3)";
+          resetMessage.style.color = "var(--success)";
+          resetMessage.innerHTML = `
+            <p style="margin: 0 0 0.5rem 0; font-weight: 600;">✅ Password reset initiated successfully!</p>
+            <p style="margin: 0; font-size: 0.9rem;">The user will be prompted to set a new password on their next login.</p>
+          `;
+          
+          confirmResetBtn.textContent = "Reset Initiated";
+          
+          // Close modal after 3 seconds
+          setTimeout(() => {
+            closeResetModal();
+            confirmResetBtn.disabled = false;
+            confirmResetBtn.textContent = "Confirm Reset";
+          }, 3000);
+          
+        } catch (err) {
+          resetMessage.style.display = "block";
+          resetMessage.style.background = "rgba(239, 68, 68, 0.1)";
+          resetMessage.style.border = "1px solid rgba(239, 68, 68, 0.3)";
+          resetMessage.style.color = "var(--error)";
+          resetMessage.textContent = "❌ " + err.message;
+          
+          confirmResetBtn.disabled = false;
+          confirmResetBtn.textContent = "Confirm Reset";
+        }
+      });
+      
+      // User Sessions Modal functionality
+      const sessionsModal = document.getElementById("sessions-modal");
+      const closeSessionsBtn = document.getElementById("close-sessions-modal");
+      const sessionsContent = document.getElementById("sessions-content");
+      const sessionsUserEmail = document.getElementById("sessions-user-email");
+      let currentUserId = null;
+      
+      async function openSessionsModal(userId, email) {
+        currentUserId = userId;
+        sessionsUserEmail.textContent = email;
+        sessionsContent.innerHTML = "<p>Loading sessions...</p>";
+        sessionsModal.style.display = "block";
+        
+        try {
+          const res = await fetch(`http://localhost:3000/admin/users/${userId}/sessions`, {
+            credentials: 'include'
+          });
+          
+          if (!res.ok) {
+            throw new Error("Failed to fetch sessions");
+          }
+          
+          const sessions = await res.json();
+          
+          if (sessions.length === 0) {
+            sessionsContent.innerHTML = "<p style='color: var(--text-secondary);'>No sessions found for this user.</p>";
+            return;
+          }
+          
+          // Sort sessions by date (newest first)
+          sessions.sort((a, b) => new Date(b.date) - new Date(a.date));
+          
+          // Build sessions table
+          let html = `<table class="sessions-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Location</th>
+                <th>Kite</th>
+                <th>Duration</th>
+                <th>Max Jump</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>`;
+          
+          sessions.forEach(session => {
+            // Format date for display
+            const displayDate = new Date(session.date + 'T00:00:00').toLocaleDateString('en-GB');
+            
+            html += `<tr>
+              <td>${displayDate}</td>
+              <td>${session.location}</td>
+              <td>${session.kite}</td>
+              <td>${session.duration}</td>
+              <td>${session.max_jump}m</td>
+              <td>
+                <button class="edit-session-btn" data-session='${JSON.stringify(session)}' style="padding: 0.4rem 0.8rem; font-size: 0.85rem; background: linear-gradient(135deg, var(--primary), #3b82f6); margin-right: 0.5rem;">
+                  Edit
+                </button>
+                <button class="delete-session-btn" data-session-id="${session.id}" data-date="${displayDate}" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; background: linear-gradient(135deg, var(--error), #dc2626);">
+                  Delete
+                </button>
+              </td>
+            </tr>`;
+          });
+          
+          html += '</tbody></table>';
+          sessionsContent.innerHTML = html;
+          
+          // Add event listeners to edit buttons
+          document.querySelectorAll('.edit-session-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+              const session = JSON.parse(e.target.getAttribute('data-session'));
+              openEditModal(session);
+            });
+          });
+          
+          // Add event listeners to delete buttons
+          document.querySelectorAll('.delete-session-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+              const sessionId = e.target.getAttribute('data-session-id');
+              const date = e.target.getAttribute('data-date');
+              if (confirm(`Are you sure you want to delete the session from ${date}?`)) {
+                await deleteSession(sessionId);
+              }
+            });
+          });
+          
+        } catch (err) {
+          sessionsContent.innerHTML = `<p style="color: var(--error);">❌ ${err.message}</p>`;
+        }
+      }
+      
+      function closeSessionsModal() {
+        sessionsModal.style.display = "none";
+        currentUserId = null;
+      }
+      
+      closeSessionsBtn.addEventListener("click", closeSessionsModal);
+      
+      sessionsModal.addEventListener("click", (e) => {
+        if (e.target === sessionsModal) {
+          closeSessionsModal();
+        }
+      });
+      
+      // Edit Session Modal functionality
+      const editModal = document.getElementById("edit-session-modal");
+      const closeEditBtn = document.getElementById("close-edit-modal");
+      const cancelEditBtn = document.getElementById("cancel-edit-btn");
+      const editForm = document.getElementById("edit-session-form");
+      const editMessage = document.getElementById("edit-message");
+      
+      function openEditModal(session) {
+        document.getElementById("edit-session-id").value = session.id;
+        
+        // Convert date from YYYY-MM-DD to DD-MM-YYYY for display
+        const [year, month, day] = session.date.split('-');
+        document.getElementById("edit-date").value = `${day}-${month}-${year}`;
+        
+        document.getElementById("edit-location").value = session.location;
+        document.getElementById("edit-kite").value = session.kite;
+        document.getElementById("edit-duration").value = session.duration;
+        document.getElementById("edit-max-jump").value = session.max_jump;
+        editMessage.style.display = "none";
+        editModal.style.display = "flex";
+      }
+      
+      function closeEditModal() {
+        editModal.style.display = "none";
+        editForm.reset();
+      }
+      
+      closeEditBtn.addEventListener("click", closeEditModal);
+      cancelEditBtn.addEventListener("click", closeEditModal);
+      
+      editModal.addEventListener("click", (e) => {
+        if (e.target === editModal) {
+          closeEditModal();
+        }
+      });
+      
+      editForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        
+        const sessionId = document.getElementById("edit-session-id").value;
+        
+        // Convert date from DD-MM-YYYY to YYYY-MM-DD for storage
+        const dateInput = document.getElementById("edit-date").value;
+        
+        // Validate date format
+        const datePattern = /^\d{2}-\d{2}-\d{4}$/;
+        if (!datePattern.test(dateInput)) {
+          editMessage.style.display = "block";
+          editMessage.style.background = "rgba(239, 68, 68, 0.1)";
+          editMessage.style.border = "1px solid rgba(239, 68, 68, 0.3)";
+          editMessage.style.color = "var(--error)";
+          editMessage.textContent = "❌ Please enter date in DD-MM-YYYY format";
+          return;
+        }
+        
+        const [day, month, year] = dateInput.split('-');
+        const formattedDate = `${year}-${month}-${day}`;
+        
+        const updatedSession = {
+          date: formattedDate,
+          location: document.getElementById("edit-location").value,
+          kite: document.getElementById("edit-kite").value,
+          duration: document.getElementById("edit-duration").value,
+          max_jump: parseFloat(document.getElementById("edit-max-jump").value)
+        };
+        
+        try {
+          const res = await fetch(`http://localhost:3000/admin/sessions/${sessionId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            credentials: 'include',
+            body: JSON.stringify(updatedSession)
+          });
+          
+          if (!res.ok) {
+            const data = await res.json();
+            throw new Error(data.error || "Failed to update session");
+          }
+          
+          editMessage.style.display = "block";
+          editMessage.style.background = "rgba(16, 185, 129, 0.1)";
+          editMessage.style.border = "1px solid rgba(16, 185, 129, 0.3)";
+          editMessage.style.color = "var(--success)";
+          editMessage.textContent = "✅ Session updated successfully!";
+          
+          setTimeout(() => {
+            closeEditModal();
+            // Refresh the sessions list
+            const email = sessionsUserEmail.textContent;
+            openSessionsModal(currentUserId, email);
+          }, 1500);
+          
+        } catch (err) {
+          editMessage.style.display = "block";
+          editMessage.style.background = "rgba(239, 68, 68, 0.1)";
+          editMessage.style.border = "1px solid rgba(239, 68, 68, 0.3)";
+          editMessage.style.color = "var(--error)";
+          editMessage.textContent = "❌ " + err.message;
+        }
+      });
+      
+      async function deleteSession(sessionId) {
+        try {
+          const res = await fetch(`http://localhost:3000/admin/sessions/${sessionId}`, {
+            method: "DELETE",
+            credentials: 'include'
+          });
+          
+          if (!res.ok) {
+            throw new Error("Failed to delete session");
+          }
+          
+          // Refresh the sessions list
+          const email = sessionsUserEmail.textContent;
+          openSessionsModal(currentUserId, email);
+          
+        } catch (err) {
+          alert("❌ " + err.message);
+        }
+      }
+    </script>
+  </body>
+</html>
