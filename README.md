@@ -1,50 +1,51 @@
 # Session Tracker
 
-A simple Node.js application to track and manage your kitesurf sessions.
+A modern Node.js application to track and manage your kitesurf sessions with a clean, data-focused interface.
 
 ## Features
 
-- User authentication with login and registration system
-- Secure password hashing with bcrypt
-- Log kitesurf session details (location, kite, duration, max jump height)
-- View all sessions in a modern card-based grid layout with dark theme
-- Update existing sessions
-- Delete sessions
-- User-friendly session numbering (hides UUID complexity)
-- Session management with secure logout
+- **User Authentication:** Secure login and registration system with bcrypt password hashing
+- **Session Management:** Log kitesurf session details including:
+  - Date (with UK format display and date picker)
+  - Location
+  - Kite used
+  - Duration
+  - Max jump height
+- **Table View:** Clean, compact table layout displaying all session data at a glance
 - **User Settings:**
   - Manage personal quiver (collection of kites)
   - Add and remove kites from quiver
   - Update email address
   - Kite selection from personal quiver when logging sessions
+- **Insights Page:** Placeholder for future analytics and statistics
+- **UUID-Based Architecture:** User sessions linked via UUID, allowing email changes without data loss
+- **Session Security:** HTTP-only cookies and secure session management
+- **Input Validation:** Comprehensive Joi validation to prevent SQL injection and ensure data integrity
 
 ## Project Structure
 
 ```
-core.29883
-Dockerfile
-index.js
-package.json
-README.md
-session_database.tf
-terraform-fix.txt
-terraform.tfstate
+index.js                    # Main Express server
+package.json               # Dependencies and scripts
+.env                       # Environment configuration
 controllers/
-    sessionController.js
-    authController.js
+    sessionController.js   # Session CRUD operations
+    authController.js      # Authentication and user management
 frontend/
-    index.html
-    login.html
-    style.css
-    images/
+    index.html            # Main sessions page with table view
+    login.html            # Login/registration page
+    insights.html         # Insights page (placeholder)
+    style.css             # Modern dark theme styling
+    images/               # Logo and assets
 middleware/
-    auth.js
+    auth.js               # Authentication middleware
 models/
-    session.js
+    session.js            # Session validation schemas (Joi)
+    user.js               # User validation schemas (Joi)
 services/
-    database.js
+    database.js           # DynamoDB connection
 views/
-    router.js
+    router.js             # API route definitions
 ```
 
 ## Prerequisites
@@ -171,10 +172,19 @@ aws dynamodb create-table \
 **Note:** The users table schema includes:
 - `user_id` (String) - Unique UUID for the user (primary key)
 - `email` (String) - User's email address (must be unique)
-- `password` (String) - Bcrypt hashed password
+- `password` (String) - Bcrypt hashed password (10 salt rounds)
 - `account_created` (String) - UK date/time when account was created
 - `last_logon` (String) - UK date/time of last successful login
 - `quiver` (List) - Array of kite names owned by the user
+
+**Sessions table schema includes:**
+- `id` (String) - Unique UUID for the session (primary key)
+- `user_id` (String) - UUID linking to the user who created the session
+- `date` (String) - Session date in YYYY-MM-DD format
+- `location` (String) - Session location (max 200 chars)
+- `kite` (String) - Kite name from user's quiver (max 100 chars)
+- `duration` (String) - Session duration in HH:MM format
+- `max_jump` (Number) - Maximum jump height in meters (0-100, 1 decimal place)
 
 The registration process automatically generates a UUID for `user_id` and initializes all fields. Sessions are linked to users via this UUID, so changing your email address doesn't affect your session history.
 
@@ -288,41 +298,87 @@ All password operations use bcrypt's built-in functions for secure authenticatio
 
 ## Using the Application
 
-1. **Registration:** Visit the login page and click "Register" to create a new account with your email and password.
+### Navigation
+- **Sessions Page** (`/index.html`): Main page with table view of all your sessions
+- **Insights Page** (`/insights.html`): Placeholder for future analytics features
+- **Hamburger Menu** (top right): Access Insights, Settings, and Logout
 
-2. **Login:** Enter your credentials on the login page. After successful login, you'll be redirected to the main session tracker.
+### Getting Started
+
+1. **Registration:** 
+   - Visit `http://localhost:3000` (redirects to login page)
+   - Click "Don't have an account? Register here"
+   - Enter email and password (min 8 chars, mixed case + digit required)
+   - After registration, switch back to login mode and sign in
+
+2. **Login:** 
+   - Enter your credentials on the login page
+   - After successful login, you'll be redirected to the sessions table
 
 3. **Managing Your Quiver:**
-   - Click the settings icon (⚙️) in the top right
+   - Click the hamburger menu (☰) in the top right
+   - Select "Settings" (⚙️)
    - Add kites to your quiver by entering the kite name (e.g., "North Reach 11m")
    - Remove kites by clicking the "Remove" button next to each kite
-   - Your quiver is saved to your user account
+   - Your quiver is saved to your user account in DynamoDB
 
 4. **Logging Sessions:**
-   - Expand the "Add Session" section
-   - Select a kite from your quiver dropdown
-   - Enter location, duration, and max jump height
+   - Expand the "Add Session" section on the main page
+   - Fill in the form:
+     - **Date:** Use the date picker (UK format display)
+     - **Location:** Session location (letters, numbers, spaces, hyphens, commas)
+     - **Kite:** Select from your quiver dropdown
+     - **Duration:** Time in HH:MM format (default: 00:00)
+     - **Max Jump:** Jump height in meters (0-100, 1 decimal place)
+   - Click "Add Session"
    - Sessions are automatically associated with your user account
 
 5. **Viewing Sessions:**
-   - Click "Fetch Sessions" to load your personal sessions
+   - Click "Fetch Sessions" to load your personal sessions in a table
+   - Table displays: Session ID, Date (UK format), Location, Kite, Duration, Max Jump
    - Only your sessions are displayed (user-specific filtering)
+   - Hover over rows for visual feedback
 
-6. **Updating Email:**
-   - Open settings (⚙️ icon)
+6. **Updating Sessions:**
+   - Expand the "Update Session" section
+   - Enter the Session ID (number from the table)
+   - Fill in only the fields you want to update
+   - Click "Update Session"
+
+7. **Deleting Sessions:**
+   - Expand the "Delete Session" section
+   - Enter the Session ID
+   - Click "Delete Session"
+
+8. **Updating Email:**
+   - Open settings (⚙️ icon in hamburger menu)
    - Enter your new email address
    - Your email is updated while maintaining all your sessions and quiver data
 
 ## Technologies Used
 
-- Node.js
-- Express
-- express-session (session management)
-- DynamoDB (via AWS SDK)
-- Joi (validation)
-- Morgan (logging)
-- dotenv (environment variables)
-- bcrypt (optional, for password hashing)
+- **Backend:**
+  - Node.js with ES modules
+  - Express 5.1.0
+  - express-session (HTTP-only session management)
+  - AWS SDK v3 (@aws-sdk/client-dynamodb, @aws-sdk/lib-dynamodb)
+  - Joi 18.0.1 (comprehensive input validation)
+  - bcrypt (password hashing with 10 salt rounds)
+  - UUID v4 (unique ID generation)
+  - Morgan (HTTP request logging)
+  - CORS (with credentials support)
+  - dotenv (environment variables)
+
+- **Frontend:**
+  - Vanilla JavaScript (ES6+)
+  - Modern CSS with custom properties (dark theme)
+  - HTML5 date inputs with UK format display
+  - Fetch API with credentials
+  - Responsive table layout
+
+- **Database:**
+  - DynamoDB Local (Docker container)
+  - AWS SDK v3.933.0
 
 ## License
 
