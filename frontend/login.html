@@ -168,6 +168,29 @@
         <button type="submit" id="submit-btn" class="login-btn">Login</button>
       </form>
       
+      <!-- Password Reset Form (hidden by default) -->
+      <form id="reset-form" class="login-form" style="display: none;">
+        <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+          <p style="margin: 0; color: var(--warning); font-weight: 600;">⚠️ Password Reset Required</p>
+          <p style="margin: 0.5rem 0 0 0; color: var(--text-secondary); font-size: 0.9rem;">An administrator has initiated a password reset. Please set a new password to continue.</p>
+        </div>
+        
+        <input type="hidden" id="reset-email" />
+        <input type="hidden" id="reset-token" />
+        
+        <div class="form-group">
+          <label for="new-password">New Password</label>
+          <input type="password" id="new-password" placeholder="Enter new password (min 8 chars)" required minlength="8" />
+        </div>
+        
+        <div class="form-group">
+          <label for="confirm-password">Confirm Password</label>
+          <input type="password" id="confirm-password" placeholder="Confirm new password" required minlength="8" />
+        </div>
+        
+        <button type="submit" class="login-btn">Set New Password</button>
+      </form>
+      
       <div class="toggle-link" id="toggle-link">Don't have an account? Register here</div>
       
       <div id="auth-message"></div>
@@ -228,6 +251,26 @@
           }
           
           if (isLoginMode) {
+            // Check if password reset is required
+            if (result.requiresReset) {
+              message.textContent = result.message;
+              message.className = "error-message";
+              message.style.background = "rgba(245, 158, 11, 0.1)";
+              message.style.borderColor = "rgba(245, 158, 11, 0.3)";
+              message.style.color = "var(--warning)";
+              
+              // Hide login form, show reset form
+              document.getElementById("auth-form").style.display = "none";
+              document.getElementById("toggle-link").style.display = "none";
+              document.getElementById("reset-form").style.display = "flex";
+              document.getElementById("form-title").textContent = "Reset Password";
+              
+              // Store reset info
+              document.getElementById("reset-email").value = result.email;
+              document.getElementById("reset-token").value = result.resetToken;
+              return;
+            }
+            
             message.textContent = "✅ Login successful! Redirecting...";
             message.className = "success-message";
             
@@ -254,6 +297,95 @@
               message.textContent = "";
             }, 2000);
           }
+          
+        } catch (err) {
+          message.textContent = "❌ Error: " + err.message;
+          message.className = "error-message";
+        }
+      });
+      
+      // Password reset form handler
+      document.getElementById("reset-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const message = document.getElementById("auth-message");
+        
+        const email = document.getElementById("reset-email").value;
+        const resetToken = document.getElementById("reset-token").value;
+        const newPassword = document.getElementById("new-password").value;
+        const confirmPassword = document.getElementById("confirm-password").value;
+        
+        // Validate passwords match
+        if (newPassword !== confirmPassword) {
+          message.textContent = "❌ Passwords do not match";
+          message.className = "error-message";
+          return;
+        }
+        
+        message.textContent = "Setting new password...";
+        message.className = "";
+        
+        try {
+          const res = await fetch("http://localhost:3000/auth/reset-password/complete", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: email,
+              resetToken: resetToken,
+              newPassword: newPassword
+            }),
+          });
+          
+          const result = await res.json();
+          
+          if (!res.ok) {
+            message.textContent = "❌ " + (result.error || "Password reset failed");
+            message.className = "error-message";
+            return;
+          }
+          
+          message.textContent = "✅ Password reset successful! Logging you in...";
+          message.className = "success-message";
+          
+          // Auto-login after successful reset
+          setTimeout(async () => {
+            try {
+              const loginRes = await fetch("http://localhost:3000/auth/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: 'include',
+                body: JSON.stringify({
+                  email: email,
+                  password: newPassword
+                }),
+              });
+              
+              const loginResult = await loginRes.json();
+              
+              if (loginRes.ok) {
+                if (loginResult.user && loginResult.user.role === 'admin') {
+                  window.location.href = "/admin.html";
+                } else {
+                  window.location.href = "/index.html";
+                }
+              } else {
+                message.textContent = "✅ Password reset successful! Please login with your new password.";
+                // Show login form again
+                document.getElementById("reset-form").style.display = "none";
+                document.getElementById("auth-form").style.display = "flex";
+                document.getElementById("toggle-link").style.display = "block";
+                document.getElementById("form-title").textContent = "Login";
+                document.getElementById("auth-form").reset();
+              }
+            } catch (err) {
+              message.textContent = "✅ Password reset successful! Please login with your new password.";
+              // Show login form again
+              document.getElementById("reset-form").style.display = "none";
+              document.getElementById("auth-form").style.display = "flex";
+              document.getElementById("toggle-link").style.display = "block";
+              document.getElementById("form-title").textContent = "Login";
+              document.getElementById("auth-form").reset();
+            }
+          }, 1500);
           
         } catch (err) {
           message.textContent = "❌ Error: " + err.message;

@@ -35,6 +35,16 @@ async function login(req, res, next) {
 
     const user = scanResult.Items[0];
 
+    // Check if user has a reset token (password reset required)
+    if (user.reset_token) {
+      return res.status(200).json({ 
+        requiresReset: true,
+        email: user.email,
+        resetToken: user.reset_token,
+        message: "Password reset required. Please set a new password."
+      });
+    }
+
     // Check if password matches (with bcrypt)
     const isValidPassword = await bcrypt.compare(password, user.password);
     
@@ -489,6 +499,69 @@ async function initiatePasswordReset(req, res, next) {
   }
 }
 
+async function completePasswordReset(req, res, next) {
+  try {
+    const { email, resetToken, newPassword } = req.body;
+    
+    // Validate inputs
+    if (!email || !resetToken || !newPassword) {
+      return res.status(400).json({ error: "Email, reset token, and new password are required" });
+    }
+    
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: "New password must be at least 8 characters long" });
+    }
+    
+    // Validate password pattern (mixed case + digit)
+    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(newPassword)) {
+      return res.status(400).json({ error: "Password must contain at least one uppercase letter, one lowercase letter, and one digit" });
+    }
+    
+    // Find user by email
+    const scanParams = {
+      TableName: "users",
+      FilterExpression: "email = :email",
+      ExpressionAttributeValues: {
+        ":email": email,
+      },
+    };
+    
+    const scanResult = await database.send(new ScanCommand(scanParams));
+    
+    if (!scanResult.Items || scanResult.Items.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    
+    const user = scanResult.Items[0];
+    
+    // Verify reset token
+    if (!user.reset_token || user.reset_token !== resetToken) {
+      return res.status(401).json({ error: "Invalid or expired reset token" });
+    }
+    
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, SALT_ROUNDS);
+    
+    // Update password and remove reset token
+    const updateParams = {
+      TableName: "users",
+      Key: { user_id: user.user_id },
+      UpdateExpression: "set password = :password REMOVE reset_token",
+      ExpressionAttributeValues: {
+        ":password": hashedPassword,
+      },
+    };
+    
+    await database.send(new UpdateCommand(updateParams));
+    
+    res.status(200).json({ 
+      message: "Password reset successful. You can now login with your new password."
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export default {
   login,
   register,
@@ -501,4 +574,5 @@ export default {
   updatePassword,
   getAllUsers,
   initiatePasswordReset,
+  completePasswordReset,
 };

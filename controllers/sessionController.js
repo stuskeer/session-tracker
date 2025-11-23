@@ -189,10 +189,138 @@ async function deleteSessionById(req, res, next) {
   }
 }
 
+// Admin function to get all sessions for a specific user
+async function getUserSessions(req, res, next) {
+  try {
+    const { userId } = req.params;
+    
+    // Validate UUID format
+    if (!isValidUuid(userId)) {
+      return res.status(400).json({ error: "Invalid user ID format" });
+    }
+    
+    const params = {
+      TableName: "Sessions",
+      FilterExpression: "user_id = :userId",
+      ExpressionAttributeValues: {
+        ":userId": userId,
+      },
+    };
+    const command = new ScanCommand(params);
+    const result = await database.send(command);
+    res.status(200).json(result.Items || []);
+  } catch (err) {
+    next(err);
+  }
+}
+
+// Admin function to update any session
+async function adminUpdateSession(req, res, next) {
+  try {
+    const sessionId = req.params.id;
+    req.body.id = sessionId;
+    const { error, value } = updateSessionSchema.validate(req.body);
+
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
+
+    // Get the session from DynamoDB to verify it exists
+    const getParams = {
+      TableName: "Sessions",
+      Key: { id: sessionId },
+    };
+
+    const getCommand = new GetCommand(getParams);
+    const result = await database.send(getCommand);
+    const session = result.Item;
+
+    if (!session) {
+      return res.status(404).json({ message: "No session found" });
+    }
+
+    // Build dynamic UpdateExpression based on provided fields
+    const updateExpressions = [];
+    const expressionAttributeNames = {};
+    const expressionAttributeValues = {};
+
+    if (value.max_jump !== undefined) {
+      updateExpressions.push("#max_jump = :max_jump");
+      expressionAttributeNames["#max_jump"] = "max_jump";
+      expressionAttributeValues[":max_jump"] = value.max_jump;
+    }
+
+    if (value.location !== undefined) {
+      updateExpressions.push("#location = :location");
+      expressionAttributeNames["#location"] = "location";
+      expressionAttributeValues[":location"] = value.location;
+    }
+
+    if (value.kite !== undefined) {
+      updateExpressions.push("#kite = :kite");
+      expressionAttributeNames["#kite"] = "kite";
+      expressionAttributeValues[":kite"] = value.kite;
+    }
+
+    if (value.duration !== undefined) {
+      updateExpressions.push("#duration = :duration");
+      expressionAttributeNames["#duration"] = "duration";
+      expressionAttributeValues[":duration"] = value.duration;
+    }
+
+    if (value.date !== undefined) {
+      updateExpressions.push("#date = :date");
+      expressionAttributeNames["#date"] = "date";
+      expressionAttributeValues[":date"] = value.date;
+    }
+
+    // Update the session in DynamoDB
+    const updateParams = {
+      TableName: "Sessions",
+      Key: { id: sessionId },
+      UpdateExpression: "set " + updateExpressions.join(", "),
+      ExpressionAttributeNames: expressionAttributeNames,
+      ExpressionAttributeValues: expressionAttributeValues,
+      ReturnValues: "ALL_NEW",
+    };
+    const updateCommand = new UpdateCommand(updateParams);
+    const updatedSession = await database.send(updateCommand);
+
+    res.status(200).json(updatedSession.Attributes);
+  } catch (err) {
+    next(err);
+  }
+}
+
+// Admin function to delete any session
+async function adminDeleteSession(req, res, next) {
+  const sessionId = req.params.id;
+  
+  // Validate UUID format
+  if (!isValidUuid(sessionId)) {
+    return res.status(400).json({ error: "Invalid session ID format" });
+  }
+  
+  try {
+    const params = {
+      TableName: "Sessions",
+      Key: { id: sessionId },
+    };
+    const command = new DeleteCommand(params);
+    await database.send(command);
+    res.status(204).end();
+  } catch (err) {
+    next(err);
+  }
+}
+
 export default {
   getAllSessions,
   createSession,
   getSessionById,
   updateSessionById,
   deleteSessionById,
+  getUserSessions,
+  adminUpdateSession,
+  adminDeleteSession,
 };

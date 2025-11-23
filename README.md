@@ -22,6 +22,8 @@ A modern Node.js application to track and manage your kitesurf sessions with a c
 - **Admin Panel:**
   - View all registered users
   - Initiate password resets for users
+  - View and manage user sessions
+  - Edit or delete any user's session
   - User management interface
   - Role-based access restrictions
 - **Insights Page:** Placeholder for future analytics and statistics
@@ -293,12 +295,15 @@ The backend server will:
 - `GET /sessions` - List all sessions for logged-in user
 - `POST /sessions` - Create a new session
 - `GET /sessions/:id` - Get a specific session
-- `PUT /sessions/:id` - Update a session
-- `DELETE /sessions/:id` - Delete a session
+- `PUT /sessions/:id` - Update a session (user can only update their own)
+- `DELETE /sessions/:id` - Delete a session (user can only delete their own)
 
 ### Admin (Protected - requires authentication and admin role)
 - `GET /admin/users` - Get all users (excludes passwords)
 - `POST /admin/reset-password` - Initiate password reset for a user (generates reset token)
+- `GET /admin/users/:userId/sessions` - Get all sessions for a specific user
+- `PUT /admin/sessions/:id` - Update any user's session
+- `DELETE /admin/sessions/:id` - Delete any user's session
 
 ## Password Security with bcrypt
 
@@ -388,17 +393,35 @@ All password operations use bcrypt's built-in functions for secure authenticatio
    - Admin roles are highlighted in warning color
    - Passwords are never displayed
 
-2. **Password Reset:**
-   - Click "Reset Password" button next to any user
+2. **View User Sessions:**
+   - Click on any user row to open their session history
+   - All sessions are displayed in a table with full details
+   - Sessions are sorted by date (newest first)
+   - Date format: DD/MM/YYYY for display
+
+3. **Edit User Sessions:**
+   - Click "Edit" button on any session in the user sessions modal
+   - Update any field: Date, Location, Kite, Duration, Max Jump
+   - Form validation ensures data integrity
+   - Changes are saved to DynamoDB immediately
+
+4. **Delete User Sessions:**
+   - Click "Delete" button on any session
+   - Confirmation dialog prevents accidental deletion
+   - Session is permanently removed from database
+
+5. **Password Reset:**
+   - Click "Reset Password" button next to any user (not on row click)
    - Confirm the action in the modal
    - A reset token is generated and stored in the user's record
    - The user will be required to set a new password on their next login
    - Admin cannot see the user's new password
 
-3. **Access Control:**
+6. **Access Control:**
    - Admin users do not have access to sessions or insights pages
    - Admin panel is restricted to users with `role: 'admin'`
    - Regular users cannot access admin endpoints (403 Forbidden)
+   - Admin can manage any user's sessions regardless of ownership
 
 ### Creating an Admin User
 

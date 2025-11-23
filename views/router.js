@@ -10,6 +10,7 @@ Router.post("/auth/login", authController.login);
 Router.post("/auth/register", authController.register);
 Router.post("/auth/logout", authController.logout);
 Router.get("/auth/check", authController.checkAuth);
+Router.post("/auth/reset-password/complete", authController.completePasswordReset);
 
 // User settings routes (protected)
 Router.get("/auth/quiver", requireAuth, authController.getQuiver);
@@ -21,6 +22,9 @@ Router.put("/auth/password", requireAuth, authController.updatePassword);
 // Admin routes (protected - admin only)
 Router.get("/admin/users", requireAuth, authController.getAllUsers);
 Router.post("/admin/reset-password", requireAuth, authController.initiatePasswordReset);
+Router.get("/admin/users/:userId/sessions", requireAuth, sessionController.getUserSessions);
+Router.put("/admin/sessions/:id", requireAuth, sessionController.adminUpdateSession);
+Router.delete("/admin/sessions/:id", requireAuth, sessionController.adminDeleteSession);
 
 // Session routes (protected - require authentication)
 Router.route("/sessions")
