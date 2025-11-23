@@ -33,9 +33,51 @@
     <div class="container">
       <h1>Insights</h1>
       
-      <div style="text-align: center; margin-top: 4rem; color: var(--text-secondary);">
-        <p style="font-size: 1.2rem;">Coming Soon</p>
-        <p style="margin-top: 1rem;">Session analytics and insights will be displayed here.</p>
+      <div id="loading" style="text-align: center; margin-top: 4rem; color: var(--text-secondary);">
+        <p style="font-size: 1.2rem;">Loading insights...</p>
+      </div>
+      
+      <div id="insights-content" style="display: none;">
+        <!-- Key Stats Cards -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+          <div style="background: linear-gradient(135deg, var(--primary), #3b82f6); padding: 1.5rem; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+            <h3 style="margin: 0 0 0.5rem 0; color: white; opacity: 0.9; font-size: 0.9rem;">Highest Jump</h3>
+            <p id="highest-jump" style="margin: 0; font-size: 2.5rem; font-weight: 700; color: white;">-</p>
+          </div>
+          
+          <div style="background: linear-gradient(135deg, var(--success), #059669); padding: 1.5rem; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+            <h3 style="margin: 0 0 0.5rem 0; color: white; opacity: 0.9; font-size: 0.9rem;">Total Sessions</h3>
+            <p id="total-sessions" style="margin: 0; font-size: 2.5rem; font-weight: 700; color: white;">-</p>
+          </div>
+          
+          <div style="background: linear-gradient(135deg, var(--warning), #f97316); padding: 1.5rem; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+            <h3 style="margin: 0 0 0.5rem 0; color: white; opacity: 0.9; font-size: 0.9rem;">Total Time</h3>
+            <p id="total-time" style="margin: 0; font-size: 2.5rem; font-weight: 700; color: white;">-</p>
+          </div>
+        </div>
+        
+        <!-- Charts Section -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+          <!-- Pie Chart - Kite Usage -->
+          <div style="background: var(--bg-card); padding: 2rem; border-radius: 16px; border: 1px solid var(--border);">
+            <h2 style="margin: 0 0 1.5rem 0; color: var(--text-primary); font-size: 1.3rem;">Time by Kite</h2>
+            <div style="position: relative; height: 300px; display: flex; justify-content: center; align-items: center;">
+              <canvas id="kite-chart"></canvas>
+            </div>
+            <div id="kite-legend" style="margin-top: 1.5rem;"></div>
+          </div>
+          
+          <!-- Sessions by Location -->
+          <div style="background: var(--bg-card); padding: 2rem; border-radius: 16px; border: 1px solid var(--border);">
+            <h2 style="margin: 0 0 1.5rem 0; color: var(--text-primary); font-size: 1.3rem;">Sessions by Location</h2>
+            <div id="location-stats" style="max-height: 350px; overflow-y: auto;"></div>
+          </div>
+        </div>
+      </div>
+      
+      <div id="no-data" style="display: none; text-align: center; margin-top: 4rem; color: var(--text-secondary);">
+        <p style="font-size: 1.2rem;">No sessions found</p>
+        <p style="margin-top: 1rem;">Log your first session to see insights!</p>
       </div>
     </div>
 
@@ -98,6 +140,172 @@
           console.error("Logout failed:", err);
         }
       });
+      
+      // Fetch and display insights
+      async function loadInsights() {
+        try {
+          const res = await fetch("http://localhost:3000/sessions", {
+            credentials: 'include'
+          });
+          
+          if (!res.ok) {
+            throw new Error("Failed to fetch sessions");
+          }
+          
+          const sessions = await res.json();
+          
+          document.getElementById("loading").style.display = "none";
+          
+          if (sessions.length === 0) {
+            document.getElementById("no-data").style.display = "block";
+            return;
+          }
+          
+          document.getElementById("insights-content").style.display = "block";
+          
+          // Calculate insights
+          calculateInsights(sessions);
+          
+        } catch (err) {
+          console.error("Failed to load insights:", err);
+          document.getElementById("loading").innerHTML = `<p style="color: var(--error);">Failed to load insights</p>`;
+        }
+      }
+      
+      function calculateInsights(sessions) {
+        // 1. Highest Jump
+        const highestJump = Math.max(...sessions.map(s => parseFloat(s.max_jump)));
+        document.getElementById("highest-jump").textContent = highestJump.toFixed(1) + "m";
+        
+        // 2. Total Sessions
+        document.getElementById("total-sessions").textContent = sessions.length;
+        
+        // 3. Total Time
+        let totalMinutes = 0;
+        sessions.forEach(session => {
+          const [hours, minutes] = session.duration.split(':').map(Number);
+          totalMinutes += (hours * 60) + minutes;
+        });
+        const totalHours = Math.floor(totalMinutes / 60);
+        const remainingMinutes = totalMinutes % 60;
+        document.getElementById("total-time").textContent = `${totalHours}h ${remainingMinutes}m`;
+        
+        // 4. Sessions by Location
+        const locationCounts = {};
+        const locationMaxJumps = {};
+        sessions.forEach(session => {
+          locationCounts[session.location] = (locationCounts[session.location] || 0) + 1;
+          const currentMax = locationMaxJumps[session.location] || 0;
+          locationMaxJumps[session.location] = Math.max(currentMax, parseFloat(session.max_jump));
+        });
+        
+        const locationStatsHTML = Object.entries(locationCounts)
+          .sort((a, b) => b[1] - a[1])
+          .map(([location, count]) => {
+            const percentage = ((count / sessions.length) * 100).toFixed(1);
+            const maxJump = locationMaxJumps[location].toFixed(1);
+            return `
+              <div style="margin-bottom: 1rem;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                  <span style="color: var(--text-primary); font-weight: 600;">${location}</span>
+                  <span style="color: var(--text-secondary);">${count} sessions (${percentage}%) • Max: ${maxJump}m</span>
+                </div>
+                <div style="background: var(--bg-main); height: 8px; border-radius: 4px; overflow: hidden;">
+                  <div style="background: linear-gradient(135deg, var(--primary), #3b82f6); height: 100%; width: ${percentage}%; transition: width 0.3s;"></div>
+                </div>
+              </div>
+            `;
+          }).join('');
+        
+        document.getElementById("location-stats").innerHTML = locationStatsHTML;
+        
+        // 5. Time by Kite - Pie Chart
+        const kiteTime = {};
+        sessions.forEach(session => {
+          const [hours, minutes] = session.duration.split(':').map(Number);
+          const sessionMinutes = (hours * 60) + minutes;
+          kiteTime[session.kite] = (kiteTime[session.kite] || 0) + sessionMinutes;
+        });
+        
+        drawPieChart(kiteTime, totalMinutes);
+      }
+      
+      function drawPieChart(kiteTime, totalMinutes) {
+        const canvas = document.getElementById("kite-chart");
+        const ctx = canvas.getContext("2d");
+        
+        // Set canvas size
+        canvas.width = 300;
+        canvas.height = 300;
+        
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const radius = 120;
+        
+        // Sort by time and prepare data
+        const sortedKites = Object.entries(kiteTime).sort((a, b) => b[1] - a[1]);
+        
+        // Color palette
+        const colors = [
+          '#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#f97316',
+          '#eab308', '#22c55e', '#10b981', '#14b8a6', '#06b6d4',
+          '#0ea5e9', '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7'
+        ];
+        
+        let currentAngle = -Math.PI / 2; // Start at top
+        
+        sortedKites.forEach(([kite, minutes], index) => {
+          const percentage = minutes / totalMinutes;
+          const sliceAngle = percentage * 2 * Math.PI;
+          
+          // Draw slice
+          ctx.beginPath();
+          ctx.moveTo(centerX, centerY);
+          ctx.arc(centerX, centerY, radius, currentAngle, currentAngle + sliceAngle);
+          ctx.closePath();
+          ctx.fillStyle = colors[index % colors.length];
+          ctx.fill();
+          
+          // Add border
+          ctx.strokeStyle = '#1a1a2e';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          
+          currentAngle += sliceAngle;
+        });
+        
+        // Draw center circle (donut effect)
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius * 0.5, 0, 2 * Math.PI);
+        ctx.fillStyle = '#1a1a2e';
+        ctx.fill();
+        
+        // Create legend
+        const legendHTML = sortedKites.map(([kite, minutes], index) => {
+          const hours = Math.floor(minutes / 60);
+          const mins = minutes % 60;
+          const percentage = ((minutes / totalMinutes) * 100).toFixed(1);
+          const timeStr = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+          
+          return `
+            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
+              <div style="width: 16px; height: 16px; border-radius: 4px; background: ${colors[index % colors.length]}; flex-shrink: 0;"></div>
+              <div style="flex: 1;">
+                <div style="display: flex; justify-content: space-between;">
+                  <span style="color: var(--text-primary); font-weight: 600;">${kite}</span>
+                  <span style="color: var(--text-secondary); font-size: 0.9rem;">${percentage}%</span>
+                </div>
+                <div style="color: var(--text-muted); font-size: 0.85rem;">${timeStr}</div>
+              </div>
+            </div>
+          `;
+        }).join('');
+        
+        document.getElementById("kite-legend").innerHTML = legendHTML;
+      }
+      
+      // Load insights on page load
+      loadInsights();
     </script>
   </body>
 </html>
