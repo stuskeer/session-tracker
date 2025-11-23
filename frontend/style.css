@@ -101,70 +101,63 @@ button:active {
   }
 }
 
-.sessions-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 1rem;
+.sessions-table {
+  width: 100%;
+  border-collapse: collapse;
   margin-top: 2rem;
-}
-
-.session-card {
   background: var(--bg-card);
-  border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 0.75rem;
-  transition: all 0.3s ease;
-  position: relative;
   overflow: hidden;
 }
 
-.session-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, var(--primary), var(--secondary));
-  opacity: 0;
-  transition: opacity 0.3s ease;
+.sessions-table thead {
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
 }
 
-.session-card:hover {
+.sessions-table th {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: white;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.sessions-table tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition: background 0.2s ease;
+}
+
+.sessions-table tbody tr:hover {
   background: var(--bg-card-hover);
-  transform: translateY(-4px);
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4);
 }
 
-.session-card:hover::before {
-  opacity: 1;
+.sessions-table tbody tr:last-child {
+  border-bottom: none;
 }
 
-.session-card h3 {
-  margin-top: 0;
-  margin-bottom: 0.3rem;
-  color: var(--accent);
-  font-size: 1rem;
-  font-weight: 600;
-}
-
-.session-card p {
-  margin: 0.05rem 0;
+.sessions-table td {
+  padding: 0.75rem 1rem;
   color: var(--text-secondary);
-  font-size: 0.85rem;
-  line-height: 0.5rem;
+  font-size: 0.9rem;
 }
 
-.session-card p strong {
-  color: var(--text-primary);
+.sessions-table td:first-child {
+  color: var(--text-muted);
   font-weight: 600;
+}
+
+.sessions-table td:nth-child(3) {
+  color: var(--accent);
+  font-weight: 500;
 }
 
 .session-id {
-  font-size: 0.75rem;
+  font-size: 0.65rem;
   color: var(--text-muted);
-  margin-top: 0.5rem;
-  padding-top: 0.5rem;
+  margin-top: 0.2rem;
+  padding-top: 0.2rem;
   border-top: 1px solid var(--border);
 }
 

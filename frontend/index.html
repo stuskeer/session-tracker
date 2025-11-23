@@ -119,7 +119,7 @@
       <summary style="font-size:1.1em; cursor:pointer;">🗑️ Remove Session</summary>
       <form id="remove-session-form" style="margin-top:1em;">
         <!-- User enters the simple display number (1, 2, 3...), not the UUID -->
-        <input type="number" name="id" placeholder="Session # to remove" required />
+        <input type="number" name="id" placeholder="Session ID to remove" required />
         <button type="submit">Remove Session</button>
       </form>
       <!-- Status message displayed after attempting to remove a session -->
@@ -132,8 +132,8 @@
       <form id="update-session-form" style="margin-top:1em; display:flex; flex-direction:column; gap:1em; max-width:400px; margin-left:auto; margin-right:auto;">
         <!-- User enters the simple display number (1, 2, 3...), not the UUID -->
         <div style="display:flex; flex-direction:column;">
-          <label for="update-id" style="margin-bottom:0.3em; font-weight:bold;">Session #</label>
-          <input type="number" id="update-id" name="id" placeholder="Enter session number" required />
+          <label for="update-id" style="margin-bottom:0.3em; font-weight:bold;">Session ID</label>
+          <input type="number" id="update-id" name="id" placeholder="Enter session ID" required />
         </div>
         <div style="display:flex; flex-direction:column;">
           <label for="update-location" style="margin-bottom:0.3em; font-weight:bold;">Location (optional)</label>
@@ -245,25 +245,35 @@
             // Clear the ID map and rebuild it with fresh data
             sessionIdMap.clear();
             
-            // Build HTML grid layout to display sessions as cards
-            let html = '<div class="sessions-grid">';
+            // Build HTML table to display sessions
+            let html = `<table class="sessions-table">
+              <thead>
+                <tr>
+                  <th>Session ID</th>
+                  <th>Date</th>
+                  <th>Location</th>
+                  <th>Kite</th>
+                  <th>Duration</th>
+                  <th>Max Jump</th>
+                </tr>
+              </thead>
+              <tbody>`;
             data.forEach((session, index) => {
               // Create simple sequential display ID (1, 2, 3...)
               const displayId = index + 1;
               // Map the display ID to the real UUID for later use
               sessionIdMap.set(displayId, session.id);
               
-              // Create a card for each session with location, kite, duration, jump height, and display ID
-              html += `<div class="session-card">
-                <h3>📍 ${session.location}</h3>
-                ${session.date ? `<p><strong>Date:</strong> ${new Date(session.date).toLocaleDateString('en-GB')}</p>` : ''}
-                <p><strong>Kite:</strong> ${session.kite}</p>
-                ${session.duration ? `<p><strong>Duration:</strong> ${session.duration}</p>` : ''}
-                <p><strong>Max Jump:</strong> ${session.max_jump}m</p>
-                <p class="session-id"><strong>Session #:</strong> ${displayId}</p>
-              </div>`;
+              html += `<tr>
+                <td>${displayId}</td>
+                <td>${session.date ? new Date(session.date).toLocaleDateString('en-GB') : '-'}</td>
+                <td>📍 ${session.location}</td>
+                <td>${session.kite}</td>
+                <td>${session.duration || '-'}</td>
+                <td>${session.max_jump}m</td>
+              </tr>`;
             });
-            html += '</div>';
+            html += '</tbody></table>';
             output.innerHTML = html;
           } catch (err) {
             // Display error message if fetch fails
