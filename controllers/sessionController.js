@@ -6,7 +6,7 @@ import {
   UpdateCommand,
   DeleteCommand,
 } from "@aws-sdk/lib-dynamodb";
-import { v4 as uuidv4 } from "uuid";
+import { v4 as uuidv4, validate as isValidUuid } from "uuid";
 import sessionSchema, { updateSessionSchema } from "../models/session.js";
 
 async function getAllSessions(req, res, next) {
@@ -68,6 +68,12 @@ async function createSession(req, res, next) {
 
 async function getSessionById(req, res, next) {
   const sessionId = req.params.id;
+  
+  // Validate UUID format
+  if (!isValidUuid(sessionId)) {
+    return res.status(400).json({ error: "Invalid session ID format" });
+  }
+  
   try {
     const params = {
       TableName: "Sessions",
@@ -157,6 +163,12 @@ async function updateSessionById(req, res, next) {
 
 async function deleteSessionById(req, res, next) {
   const sessionId = req.params.id;
+  
+  // Validate UUID format
+  if (!isValidUuid(sessionId)) {
+    return res.status(400).json({ error: "Invalid session ID format" });
+  }
+  
   try {
     const params = {
       TableName: "Sessions",

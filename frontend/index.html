@@ -7,12 +7,23 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <!-- Top right controls -->
-    <div style="position: absolute; top: 1rem; right: 1rem; display: flex; gap: 0.5rem; align-items: center; z-index: 100;">
-      <button id="settings-btn" style="padding: 0.5em 1em; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; border: none; border-radius: 12px; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem;">
-        <span style="font-size: 1.2em;">⚙️</span> Settings
+    <!-- Top right hamburger menu -->
+    <div style="position: absolute; top: 1rem; right: 1rem; z-index: 100;">
+      <button id="hamburger-btn" style="background: var(--bg-card); border: 1px solid var(--border); padding: 0.7rem; border-radius: 8px; cursor: pointer; display: flex; flex-direction: column; gap: 4px; width: 40px; height: 40px; justify-content: center; align-items: center;">
+        <span style="display: block; width: 20px; height: 2px; background: var(--text-primary); transition: 0.3s;"></span>
+        <span style="display: block; width: 20px; height: 2px; background: var(--text-primary); transition: 0.3s;"></span>
+        <span style="display: block; width: 20px; height: 2px; background: var(--text-primary); transition: 0.3s;"></span>
       </button>
-      <button id="logout-btn" style="padding: 0.5em 1em; background: linear-gradient(135deg, var(--error), #dc2626); color: white; border: none; border-radius: 12px; cursor: pointer; font-size: 0.9rem;">Logout</button>
+      
+      <!-- Dropdown menu -->
+      <div id="menu-dropdown" style="display: none; position: absolute; top: 50px; right: 0; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; min-width: 180px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
+        <button id="settings-btn" style="width: 100%; padding: 0.8rem 1rem; background: none; border: none; color: var(--text-primary); cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-size: 0.95rem; border-bottom: 1px solid var(--border); border-radius: 12px 12px 0 0;">
+          <span style="font-size: 1.2em;">⚙️</span> Settings
+        </button>
+        <button id="logout-btn" style="width: 100%; padding: 0.8rem 1rem; background: none; border: none; color: var(--error); cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-size: 0.95rem; border-radius: 0 0 12px 12px;">
+          <span style="font-size: 1.2em;">🚪</span> Logout
+        </button>
+      </div>
     </div>
     
     <!-- Logo image displayed at the top -->
@@ -47,7 +58,7 @@
           
           <!-- Add Kite Form -->
           <form id="add-kite-form" style="margin-top: 1rem; display: flex; gap: 0.5rem;">
-            <input type="text" id="new-kite" name="new-kite" placeholder="e.g., North Reach 11m" required style="flex: 1;" />
+            <input type="text" id="new-kite" name="kiteName" placeholder="e.g., North Reach 11m" required style="flex: 1;" />
             <button type="submit" style="padding: 0.5rem 1rem;">Add</button>
           </form>
           <div id="kite-add-message" style="margin-top: 0.5rem;"></div>
@@ -83,12 +94,12 @@
           </select>
         </div>
         <div style="display:flex; flex-direction:column;">
-          <label for="add-duration" style="margin-bottom:0.3em; font-weight:bold;">Duration</label>
+          <label for="add-duration" style="margin-bottom:0.3em; font-weight:bold;">Duration (HH:MM)</label>
           <input type="time" id="add-duration" name="duration" placeholder="hh:mm" required />
         </div>
         <div style="display:flex; flex-direction:column;">
           <label for="add-max-jump" style="margin-bottom:0.3em; font-weight:bold;">Max Jump (meters)</label>
-          <input type="number" id="add-max-jump" name="max_jump" placeholder="e.g., 15" required />
+          <input type="number" id="add-max-jump" name="max_jump" placeholder="e.g., 15.7" step="0.1" min="0" required />
         </div>
         <button type="submit" style="margin-top:0.5em;">Add Session</button>
       </form>
@@ -128,12 +139,12 @@
           </select>
         </div>
         <div style="display:flex; flex-direction:column;">
-          <label for="update-duration" style="margin-bottom:0.3em; font-weight:bold;">Duration (optional)</label>
+          <label for="update-duration" style="margin-bottom:0.3em; font-weight:bold;">Duration (HH:MM Optional)</label>
           <input type="time" id="update-duration" name="duration" placeholder="hh:mm" />
         </div>
         <div style="display:flex; flex-direction:column;">
           <label for="update-max-jump" style="margin-bottom:0.3em; font-weight:bold;">Max Jump (optional)</label>
-          <input type="number" id="update-max-jump" name="max_jump" placeholder="New max jump" />
+          <input type="number" id="update-max-jump" name="max_jump" placeholder="New max jump" step="0.1" min="0" />
         </div>
         <button type="submit" style="margin-top:0.5em;">Update Session</button>
       </form>
@@ -160,8 +171,25 @@
       // Run auth check on page load
       checkAuth();
       
+      // Hamburger menu toggle
+      const hamburgerBtn = document.getElementById("hamburger-btn");
+      const menuDropdown = document.getElementById("menu-dropdown");
+      
+      hamburgerBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        menuDropdown.style.display = menuDropdown.style.display === "none" ? "block" : "none";
+      });
+      
+      // Close menu when clicking outside
+      document.addEventListener("click", (e) => {
+        if (!hamburgerBtn.contains(e.target) && !menuDropdown.contains(e.target)) {
+          menuDropdown.style.display = "none";
+        }
+      });
+      
       // Logout handler
       document.getElementById("logout-btn").addEventListener("click", async () => {
+        menuDropdown.style.display = "none";
         try {
           await fetch("http://localhost:3000/auth/logout", {
             method: "POST",
@@ -363,6 +391,7 @@
       
       // Open settings modal
       settingsBtn.addEventListener("click", () => {
+        menuDropdown.style.display = "none";
         settingsModal.style.display = "flex";
         loadQuiver();
       });

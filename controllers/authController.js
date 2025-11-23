@@ -1,32 +1,39 @@
 import database from "../services/database.js";
-import { GetCommand, PutCommand, UpdateCommand, DeleteCommand } from "@aws-sdk/lib-dynamodb";
+import { GetCommand, PutCommand, UpdateCommand, DeleteCommand, ScanCommand } from "@aws-sdk/lib-dynamodb";
 import bcrypt from "bcrypt";
+import { v4 as uuidv4 } from "uuid";
+import { loginSchema, registerSchema, updateEmailSchema, kiteSchema } from "../models/user.js";
 
 const SALT_ROUNDS = 10;
 
 async function login(req, res, next) {
   try {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-      return res.status(400).json({ error: "Email and password are required" });
+    // Validate and sanitize input
+    const { error, value } = loginSchema.validate(req.body);
+    
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
     }
+    
+    const { email, password } = value;
 
-    // Query the users table to find the user by email (user_id)
-    const params = {
+    // Find user by email using ScanCommand
+    const scanParams = {
       TableName: "users",
-      Key: { user_id: email },
+      FilterExpression: "email = :email",
+      ExpressionAttributeValues: {
+        ":email": email,
+      },
     };
 
-    const command = new GetCommand(params);
-    const result = await database.send(command);
+    const scanResult = await database.send(new ScanCommand(scanParams));
 
     // Check if user exists
-    if (!result.Item) {
+    if (!scanResult.Items || scanResult.Items.length === 0) {
       return res.status(401).json({ error: "Invalid email or password" });
     }
 
-    const user = result.Item;
+    const user = scanResult.Items[0];
 
     // Check if password matches (with bcrypt)
     const isValidPassword = await bcrypt.compare(password, user.password);
@@ -48,7 +55,7 @@ async function login(req, res, next) {
 
     const updateParams = {
       TableName: "users",
-      Key: { user_id: email },
+      Key: { user_id: user.user_id },
       UpdateExpression: "set last_logon = :logon",
       ExpressionAttributeValues: {
         ":logon": ukDateTime,
@@ -57,13 +64,14 @@ async function login(req, res, next) {
 
     await database.send(new UpdateCommand(updateParams));
 
-    // Store user info in session
+    // Store user UUID in session
     req.session.userId = user.user_id;
+    req.session.userEmail = user.email;
     req.session.isAuthenticated = true;
 
     res.status(200).json({ 
       message: "Login successful",
-      user: { email: user.user_id }
+      user: { email: user.email }
     });
   } catch (error) {
     next(error);
@@ -72,23 +80,32 @@ async function login(req, res, next) {
 
 async function register(req, res, next) {
   try {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-      return res.status(400).json({ error: "Email and password are required" });
+    // Validate and sanitize input
+    const { error, value } = registerSchema.validate(req.body);
+    
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
     }
+    
+    const { email, password } = value;
 
-    // Check if user already exists
-    const checkParams = {
+    // Check if email already exists using ScanCommand
+    const scanParams = {
       TableName: "users",
-      Key: { user_id: email },
+      FilterExpression: "email = :email",
+      ExpressionAttributeValues: {
+        ":email": email,
+      },
     };
 
-    const checkResult = await database.send(new GetCommand(checkParams));
+    const scanResult = await database.send(new ScanCommand(scanParams));
 
-    if (checkResult.Item) {
+    if (scanResult.Items && scanResult.Items.length > 0) {
       return res.status(400).json({ error: "User already exists" });
     }
+
+    // Generate UUID for user_id
+    const userId = uuidv4();
 
     // Hash the password
     const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
@@ -104,11 +121,12 @@ async function register(req, res, next) {
       second: "2-digit",
     });
 
-    // Create new user
+    // Create new user with UUID as primary key
     const params = {
       TableName: "users",
       Item: {
-        user_id: email,
+        user_id: userId,
+        email: email,
         password: hashedPassword,
         account_created: ukDateTime,
         last_logon: null,
@@ -142,18 +160,18 @@ async function logout(req, res, next) {
 
 async function checkAuth(req, res, next) {
   if (req.session && req.session.isAuthenticated) {
-    return res.status(200).json({ authenticated: true, user: { email: req.session.userId } });
+    return res.status(200).json({ authenticated: true, user: { email: req.session.userEmail } });
   }
   res.status(200).json({ authenticated: false });
 }
 
 async function getQuiver(req, res, next) {
   try {
-    const email = req.session.userId;
+    const userId = req.session.userId;
     
     const params = {
       TableName: "users",
-      Key: { user_id: email },
+      Key: { user_id: userId },
     };
     
     const result = await database.send(new GetCommand(params));
@@ -170,17 +188,20 @@ async function getQuiver(req, res, next) {
 
 async function addKite(req, res, next) {
   try {
-    const email = req.session.userId;
-    const { kite } = req.body;
+    // Validate and sanitize input
+    const { error, value } = kiteSchema.validate(req.body);
     
-    if (!kite || !kite.trim()) {
-      return res.status(400).json({ error: "Kite name is required" });
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
     }
+    
+    const userId = req.session.userId;
+    const { kite } = value;
     
     // Get current quiver
     const getParams = {
       TableName: "users",
-      Key: { user_id: email },
+      Key: { user_id: userId },
     };
     
     const result = await database.send(new GetCommand(getParams));
@@ -201,7 +222,7 @@ async function addKite(req, res, next) {
     
     const updateParams = {
       TableName: "users",
-      Key: { user_id: email },
+      Key: { user_id: userId },
       UpdateExpression: "set quiver = :quiver",
       ExpressionAttributeValues: {
         ":quiver": updatedQuiver,
@@ -221,17 +242,20 @@ async function addKite(req, res, next) {
 
 async function removeKite(req, res, next) {
   try {
-    const email = req.session.userId;
-    const { kite } = req.body;
+    // Validate and sanitize input
+    const { error, value } = kiteSchema.validate(req.body);
     
-    if (!kite) {
-      return res.status(400).json({ error: "Kite name is required" });
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
     }
+    
+    const userId = req.session.userId;
+    const { kite } = value;
     
     // Get current quiver
     const getParams = {
       TableName: "users",
-      Key: { user_id: email },
+      Key: { user_id: userId },
     };
     
     const result = await database.send(new GetCommand(getParams));
@@ -247,7 +271,7 @@ async function removeKite(req, res, next) {
     
     const updateParams = {
       TableName: "users",
-      Key: { user_id: email },
+      Key: { user_id: userId },
       UpdateExpression: "set quiver = :quiver",
       ExpressionAttributeValues: {
         ":quiver": updatedQuiver,
@@ -267,71 +291,54 @@ async function removeKite(req, res, next) {
 
 async function updateEmail(req, res, next) {
   try {
-    const oldEmail = req.session.userId;
-    const { email: newEmail } = req.body;
+    // Validate and sanitize input
+    const { error, value } = updateEmailSchema.validate(req.body);
     
-    if (!newEmail || !newEmail.trim()) {
-      return res.status(400).json({ error: "New email is required" });
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
     }
     
-    const trimmedEmail = newEmail.trim();
+    const userId = req.session.userId;
+    const { email: newEmail } = value;
     
-    // Check if new email is different
-    if (trimmedEmail === oldEmail) {
+    // Check if new email is different from current
+    if (newEmail === req.session.userEmail) {
       return res.status(400).json({ error: "New email is the same as current email" });
     }
     
-    // Check if new email already exists
-    const checkParams = {
+    // Check if new email already exists using ScanCommand
+    const scanParams = {
       TableName: "users",
-      Key: { user_id: trimmedEmail },
-    };
-    
-    const checkResult = await database.send(new GetCommand(checkParams));
-    
-    if (checkResult.Item) {
-      return res.status(400).json({ error: "Email already in use" });
-    }
-    
-    // Get current user data
-    const getUserParams = {
-      TableName: "users",
-      Key: { user_id: oldEmail },
-    };
-    
-    const userResult = await database.send(new GetCommand(getUserParams));
-    
-    if (!userResult.Item) {
-      return res.status(404).json({ error: "User not found" });
-    }
-    
-    const userData = userResult.Item;
-    
-    // Create new user with new email
-    const putParams = {
-      TableName: "users",
-      Item: {
-        ...userData,
-        user_id: trimmedEmail,
+      FilterExpression: "email = :email",
+      ExpressionAttributeValues: {
+        ":email": newEmail,
       },
     };
     
-    await database.send(new PutCommand(putParams));
+    const scanResult = await database.send(new ScanCommand(scanParams));
     
-    // Delete old user
-    const deleteParams = {
+    if (scanResult.Items && scanResult.Items.length > 0) {
+      return res.status(400).json({ error: "Email already in use" });
+    }
+    
+    // Update email field only (user_id remains the same)
+    const updateParams = {
       TableName: "users",
-      Key: { user_id: oldEmail },
+      Key: { user_id: userId },
+      UpdateExpression: "set email = :email",
+      ExpressionAttributeValues: {
+        ":email": newEmail,
+      },
     };
     
-    await database.send(new DeleteCommand(deleteParams));
+    await database.send(new UpdateCommand(updateParams));
     
     // Update session with new email
-    req.session.userId = trimmedEmail;
+    req.session.userEmail = newEmail;
     
     res.status(200).json({ 
       message: "Email updated successfully",
-      user: { email: trimmedEmail }
+      user: { email: newEmail }
     });
   } catch (error) {
     next(error);

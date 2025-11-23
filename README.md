@@ -169,13 +169,34 @@ aws dynamodb create-table \
 ```
 
 **Note:** The users table schema includes:
-- `user_id` (String) - User's email address (primary key)
+- `user_id` (String) - Unique UUID for the user (primary key)
+- `email` (String) - User's email address (must be unique)
 - `password` (String) - Bcrypt hashed password
 - `account_created` (String) - UK date/time when account was created
 - `last_logon` (String) - UK date/time of last successful login
 - `quiver` (List) - Array of kite names owned by the user
 
-The registration process automatically initializes these fields, so you don't need to manually add them.
+The registration process automatically generates a UUID for `user_id` and initializes all fields. Sessions are linked to users via this UUID, so changing your email address doesn't affect your session history.
+
+**Important:** If you have an existing users table with email as the primary key, you'll need to recreate it:
+```sh
+# Delete old table
+aws dynamodb delete-table \
+  --table-name users \
+  --endpoint-url http://localhost:8000 \
+  --region us-east-1
+
+# Recreate with new structure
+aws dynamodb create-table \
+  --table-name users \
+  --attribute-definitions AttributeName=user_id,AttributeType=S \
+  --key-schema AttributeName=user_id,KeyType=HASH \
+  --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5 \
+  --endpoint-url http://localhost:8000 \
+  --region us-east-1
+```
+
+After recreating the table, all users will need to register again. Their old sessions will remain in the Sessions table but won't be accessible until they create a new account.
 
 ### 7. Connect your app
 
