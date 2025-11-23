@@ -20,12 +20,16 @@ A modern Node.js application to track and manage your kitesurf sessions with a c
   - Update password securely
   - Kite selection from personal quiver when logging sessions
 - **Admin Panel:**
-  - View all registered users
-  - Initiate password resets for users
-  - View and manage user sessions
+  - View all registered users with status indicators
+  - Action dropdown menu for each user with the following options:
+    - **View Sessions:** Display all sessions for a specific user
+    - **Reset Password:** Initiate password reset requiring new password on next login
+    - **Activate/Deactivate User:** Toggle user account active status
+    - **Delete User:** Permanently remove user account and associated data
   - Edit or delete any user's session
-  - User management interface
+  - User management interface with status monitoring
   - Role-based access restrictions
+  - Protected actions (admins cannot deactivate or delete themselves)
 - **Insights & Analytics:**
   - Highest jump achievement across all sessions
   - Total session count and cumulative session time
@@ -190,6 +194,7 @@ aws dynamodb create-table \
 - `email` (String) - User's email address (must be unique)
 - `password` (String) - Bcrypt hashed password (10 salt rounds)
 - `role` (String) - User role: 'user' (default) or 'admin'
+- `is_active` (Boolean) - Account active status (default: true, can be toggled by admin)
 - `account_created` (String) - UK date/time when account was created
 - `last_logon` (String) - UK date/time of last successful login
 - `quiver` (List) - Array of kite names owned by the user
@@ -305,8 +310,10 @@ The backend server will:
 - `DELETE /sessions/:id` - Delete a session (user can only delete their own)
 
 ### Admin (Protected - requires authentication and admin role)
-- `GET /admin/users` - Get all users (excludes passwords)
+- `GET /admin/users` - Get all users with active status (excludes passwords)
 - `POST /admin/reset-password` - Initiate password reset for a user (generates reset token)
+- `POST /admin/users/toggle-status` - Activate or deactivate a user account
+- `DELETE /admin/users/:userId` - Permanently delete a user account
 - `GET /admin/users/:userId/sessions` - Get all sessions for a specific user
 - `PUT /admin/sessions/:id` - Update any user's session
 - `DELETE /admin/sessions/:id` - Delete any user's session
@@ -411,39 +418,60 @@ All password operations use bcrypt's built-in functions for secure authenticatio
 
 1. **View All Users:**
    - Click "Fetch All Users" to display a table of all registered users
-   - Table shows: Email, Role, Account Created, Last Login, Kite Count
+   - Table shows: Email, Role, Status, Account Created, Last Login, Kite Count
    - Admin roles are highlighted in warning color
+   - Active status shown in green, Inactive in red
    - Passwords are never displayed
 
-2. **View User Sessions:**
-   - Click on any user row to open their session history
-   - All sessions are displayed in a table with full details
+2. **User Actions Dropdown:**
+   - Each user has an "Actions..." dropdown menu with the following options:
+   
+   **View Sessions:**
+   - Opens a modal showing all sessions for that user
    - Sessions are sorted by date (newest first)
    - Date format: DD/MM/YYYY for display
+   
+   **Reset Password:**
+   - Generates a reset token for the user
+   - User will be prompted to set a new password on next login
+   - Confirmation dialog prevents accidental resets
+   
+   **Activate/Deactivate User:**
+   - Toggle user account active status
+   - Deactivated users cannot log in
+   - Shows "Activate User" for inactive accounts, "Deactivate User" for active accounts
+   - Confirmation dialog required
+   - Admins cannot deactivate their own account
+   
+   **Delete User:**
+   - Permanently removes user account from database
+   - Double confirmation required for safety
+   - Warning message about permanent data deletion
+   - Admins cannot delete their own account
 
 3. **Edit User Sessions:**
-   - Click "Edit" button on any session in the user sessions modal
+   - In the sessions modal, click "Edit" button on any session
    - Update any field: Date, Location, Kite, Duration, Max Jump
    - Form validation ensures data integrity
    - Changes are saved to DynamoDB immediately
 
 4. **Delete User Sessions:**
-   - Click "Delete" button on any session
+   - In the sessions modal, click "Delete" button on any session
    - Confirmation dialog prevents accidental deletion
    - Session is permanently removed from database
 
-5. **Password Reset:**
-   - Click "Reset Password" button next to any user (not on row click)
-   - Confirm the action in the modal
-   - A reset token is generated and stored in the user's record
-   - The user will be required to set a new password on their next login
-   - Admin cannot see the user's new password
+5. **Security Features:**
+   - All admin actions require admin role verification
+   - Admins cannot modify their own account status or delete themselves
+   - Deactivated users receive error message on login attempt
+   - All operations are logged server-side
+   - Access control prevents unauthorized actions
 
 6. **Access Control:**
    - Admin users do not have access to sessions or insights pages
    - Admin panel is restricted to users with `role: 'admin'`
    - Regular users cannot access admin endpoints (403 Forbidden)
-   - Admin can manage any user's sessions regardless of ownership
+   - Admin can manage any user's sessions and account status
 
 ### Creating an Admin User
 

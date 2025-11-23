@@ -216,6 +216,7 @@
               <tr>
                 <th>Email</th>
                 <th>Role</th>
+                <th>Status</th>
                 <th>Account Created</th>
                 <th>Last Login</th>
                 <th>Kites</th>
@@ -225,16 +226,25 @@
             <tbody>`;
           
           data.users.forEach(user => {
+            const isActive = user.active !== false;
+            const statusColor = isActive ? 'var(--success)' : 'var(--error)';
+            const statusText = isActive ? 'Active' : 'Inactive';
+            
             html += `<tr class="user-row" data-userid="${user.user_id}" data-email="${user.email}" style="cursor: pointer;">
               <td>${user.email}</td>
               <td><span style="color: ${user.role === 'admin' ? 'var(--warning)' : 'var(--success)'}; font-weight: 600;">${user.role}</span></td>
+              <td><span style="color: ${statusColor}; font-weight: 600;">${statusText}</span></td>
               <td>${user.account_created || '-'}</td>
               <td>${user.last_logon || 'Never'}</td>
               <td>${user.quiver_count}</td>
-              <td>
-                <button class="reset-password-btn" data-email="${user.email}" style="padding: 0.5rem 1rem; font-size: 0.85rem; background: linear-gradient(135deg, var(--warning), #f97316);">
-                  Reset Password
-                </button>
+              <td style="position: relative;">
+                <select class="user-actions-dropdown" data-userid="${user.user_id}" data-email="${user.email}" data-active="${isActive}" style="padding: 0.6rem 2rem 0.6rem 1rem; font-size: 0.9rem; background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); cursor: pointer; appearance: none; background-image: url('data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%228%22 viewBox=%220 0 12 8%22%3E%3Cpath fill=%22%23999%22 d=%22M0 0l6 8 6-8z%22/%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 0.7rem center; background-size: 10px;">
+                  <option value="">Actions...</option>
+                  <option value="view-sessions">View Sessions</option>
+                  <option value="reset-password">Reset Password</option>
+                  <option value="toggle-status">${isActive ? 'Deactivate User' : 'Activate User'}</option>
+                  <option value="delete-user">Delete User</option>
+                </select>
               </td>
             </tr>`;
           });
@@ -245,8 +255,8 @@
           // Add event listeners to user rows
           document.querySelectorAll('.user-row').forEach(row => {
             row.addEventListener('click', (e) => {
-              // Don't open sessions if clicking the reset password button
-              if (e.target.classList.contains('reset-password-btn')) {
+              // Don't open sessions if clicking the dropdown
+              if (e.target.classList.contains('user-actions-dropdown')) {
                 return;
               }
               const userId = row.getAttribute('data-userid');
@@ -255,12 +265,36 @@
             });
           });
           
-          // Add event listeners to reset password buttons
-          document.querySelectorAll('.reset-password-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
+          // Add event listeners to action dropdowns
+          document.querySelectorAll('.user-actions-dropdown').forEach(dropdown => {
+            dropdown.addEventListener('click', (e) => {
               e.stopPropagation();
+            });
+            
+            dropdown.addEventListener('change', async (e) => {
+              e.stopPropagation();
+              const action = e.target.value;
+              const userId = e.target.getAttribute('data-userid');
               const email = e.target.getAttribute('data-email');
-              openResetModal(email);
+              const isActive = e.target.getAttribute('data-active') === 'true';
+              
+              // Reset dropdown to default
+              e.target.value = '';
+              
+              switch(action) {
+                case 'view-sessions':
+                  openSessionsModal(userId, email);
+                  break;
+                case 'reset-password':
+                  openResetModal(email);
+                  break;
+                case 'toggle-status':
+                  await toggleUserStatus(userId, !isActive, email);
+                  break;
+                case 'delete-user':
+                  await deleteUserAccount(userId, email);
+                  break;
+              }
             });
           });
           
@@ -573,6 +607,69 @@
           // Refresh the sessions list
           const email = sessionsUserEmail.textContent;
           openSessionsModal(currentUserId, email);
+          
+        } catch (err) {
+          alert("❌ " + err.message);
+        }
+      }
+      
+      // Toggle user status (activate/deactivate)
+      async function toggleUserStatus(userId, newActiveStatus, email) {
+        const action = newActiveStatus ? 'activate' : 'deactivate';
+        
+        if (!confirm(`Are you sure you want to ${action} user ${email}?`)) {
+          return;
+        }
+        
+        try {
+          const res = await fetch("http://localhost:3000/admin/users/toggle-status", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: 'include',
+            body: JSON.stringify({ userId, active: newActiveStatus })
+          });
+          
+          const data = await res.json();
+          
+          if (!res.ok) {
+            throw new Error(data.error || `Failed to ${action} user`);
+          }
+          
+          // Refresh the user list
+          document.getElementById("fetch-users-btn").click();
+          
+        } catch (err) {
+          alert("❌ " + err.message);
+        }
+      }
+      
+      // Delete user account
+      async function deleteUserAccount(userId, email) {
+        if (!confirm(`⚠️ WARNING: Are you sure you want to permanently delete user ${email}?\n\nThis action cannot be undone and will delete all user data including their sessions.`)) {
+          return;
+        }
+        
+        // Double confirmation for safety
+        if (!confirm(`Please confirm again: Delete ${email} permanently?`)) {
+          return;
+        }
+        
+        try {
+          const res = await fetch(`http://localhost:3000/admin/users/${userId}`, {
+            method: "DELETE",
+            credentials: 'include'
+          });
+          
+          const data = await res.json();
+          
+          if (!res.ok) {
+            throw new Error(data.error || "Failed to delete user");
+          }
+          
+          alert("✅ User deleted successfully");
+          
+          // Refresh the user list
+          document.getElementById("fetch-users-btn").click();
           
         } catch (err) {
           alert("❌ " + err.message);
