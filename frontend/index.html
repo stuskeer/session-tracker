@@ -17,7 +17,10 @@
       
       <!-- Dropdown menu -->
       <div id="menu-dropdown" style="display: none; position: absolute; top: 50px; right: 0; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; min-width: 180px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
-        <button id="settings-btn" style="width: 100%; padding: 0.8rem 1rem; background: none; border: none; color: var(--text-primary); cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-size: 0.95rem; border-bottom: 1px solid var(--border); border-radius: 12px 12px 0 0;">
+        <button id="insights-btn" style="width: 100%; padding: 0.8rem 1rem; background: none; border: none; color: var(--text-primary); cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-size: 0.95rem; border-bottom: 1px solid var(--border); border-radius: 12px 12px 0 0;">
+          <span style="font-size: 1.2em;">📈</span> Insights
+        </button>
+        <button id="settings-btn" style="width: 100%; padding: 0.8rem 1rem; background: none; border: none; color: var(--text-primary); cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-size: 0.95rem; border-bottom: 1px solid var(--border); border-radius: 0;">
           <span style="font-size: 1.2em;">⚙️</span> Settings
         </button>
         <button id="logout-btn" style="width: 100%; padding: 0.8rem 1rem; background: none; border: none; color: var(--error); cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-size: 0.95rem; border-radius: 0 0 12px 12px;">
@@ -88,6 +91,10 @@
           <input type="text" id="add-location" name="location" placeholder="e.g., Rest Bay" required />
         </div>
         <div style="display:flex; flex-direction:column;">
+          <label for="add-date" style="margin-bottom:0.3em; font-weight:bold;">Date</label>
+          <input type="date" id="add-date" name="date" required />
+        </div>
+        <div style="display:flex; flex-direction:column;">
           <label for="add-kite" style="margin-bottom:0.3em; font-weight:bold;">Kite</label>
           <select id="add-kite" name="kite" required>
             <option value="">Select a kite...</option>
@@ -95,7 +102,7 @@
         </div>
         <div style="display:flex; flex-direction:column;">
           <label for="add-duration" style="margin-bottom:0.3em; font-weight:bold;">Duration (HH:MM)</label>
-          <input type="time" id="add-duration" name="duration" placeholder="hh:mm" required />
+          <input type="time" id="add-duration" name="duration" placeholder="hh:mm" value="00:00" required />
         </div>
         <div style="display:flex; flex-direction:column;">
           <label for="add-max-jump" style="margin-bottom:0.3em; font-weight:bold;">Max Jump (meters)</label>
@@ -133,6 +140,10 @@
           <input type="text" id="update-location" name="location" placeholder="New location" />
         </div>
         <div style="display:flex; flex-direction:column;">
+          <label for="update-date" style="margin-bottom:0.3em; font-weight:bold;">Date (optional)</label>
+          <input type="date" id="update-date" name="date" />
+        </div>
+        <div style="display:flex; flex-direction:column;">
           <label for="update-kite" style="margin-bottom:0.3em; font-weight:bold;">Kite (optional)</label>
           <select id="update-kite" name="kite">
             <option value="">Select a kite...</option>
@@ -140,7 +151,7 @@
         </div>
         <div style="display:flex; flex-direction:column;">
           <label for="update-duration" style="margin-bottom:0.3em; font-weight:bold;">Duration (HH:MM Optional)</label>
-          <input type="time" id="update-duration" name="duration" placeholder="hh:mm" />
+          <input type="time" id="update-duration" name="duration" placeholder="hh:mm" value="00:00" />
         </div>
         <div style="display:flex; flex-direction:column;">
           <label for="update-max-jump" style="margin-bottom:0.3em; font-weight:bold;">Max Jump (optional)</label>
@@ -185,6 +196,11 @@
         if (!hamburgerBtn.contains(e.target) && !menuDropdown.contains(e.target)) {
           menuDropdown.style.display = "none";
         }
+      });
+
+      // Insights button handler
+      document.getElementById("insights-btn").addEventListener("click", () => {
+        window.location.href = "/insights.html";
       });
       
       // Logout handler
@@ -240,6 +256,7 @@
               // Create a card for each session with location, kite, duration, jump height, and display ID
               html += `<div class="session-card">
                 <h3>📍 ${session.location}</h3>
+                ${session.date ? `<p><strong>Date:</strong> ${new Date(session.date).toLocaleDateString('en-GB')}</p>` : ''}
                 <p><strong>Kite:</strong> ${session.kite}</p>
                 ${session.duration ? `<p><strong>Duration:</strong> ${session.duration}</p>` : ''}
                 <p><strong>Max Jump:</strong> ${session.max_jump}m</p>
@@ -265,6 +282,7 @@
           const data = {
             id: form.id.value,
             location: form.location.value,
+            date: form.date.value,
             kite: form.kite.value,
             duration: form.duration.value,
             max_jump: Number(form.max_jump.value),
@@ -349,6 +367,9 @@
         const data = {};
         if (form.location.value.trim()) {
           data.location = form.location.value;
+        }
+        if (form.date.value) {
+          data.date = form.date.value;
         }
         if (form.kite.value.trim()) {
           data.kite = form.kite.value;

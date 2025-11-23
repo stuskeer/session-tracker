@@ -112,7 +112,7 @@ button:active {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 1rem;
+  padding: 0.75rem;
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
@@ -142,16 +142,17 @@ button:active {
 
 .session-card h3 {
   margin-top: 0;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.3rem;
   color: var(--accent);
   font-size: 1rem;
   font-weight: 600;
 }
 
 .session-card p {
-  margin: 0.5rem 0;
+  margin: 0.05rem 0;
   color: var(--text-secondary);
   font-size: 0.85rem;
+  line-height: 0.5rem;
 }
 
 .session-card p strong {
@@ -162,8 +163,8 @@ button:active {
 .session-id {
   font-size: 0.75rem;
   color: var(--text-muted);
-  margin-top: 0.75rem;
-  padding-top: 0.75rem;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
   border-top: 1px solid var(--border);
 }
 
@@ -213,6 +214,7 @@ input[type="email"],
 input[type="password"],
 input[type="number"],
 input[type="time"],
+input[type="date"],
 select {
   width: 100%;
   padding: 0.875rem;

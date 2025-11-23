@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Insights - Session Tracker</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <!-- Top right hamburger menu -->
+    <div style="position: absolute; top: 1rem; right: 1rem; z-index: 100;">
+      <button id="hamburger-btn" style="background: var(--bg-card); border: 1px solid var(--border); padding: 0.7rem; border-radius: 8px; cursor: pointer; display: flex; flex-direction: column; gap: 4px; width: 40px; height: 40px; justify-content: center; align-items: center;">
+        <span style="display: block; width: 20px; height: 2px; background: var(--text-primary); transition: 0.3s;"></span>
+        <span style="display: block; width: 20px; height: 2px; background: var(--text-primary); transition: 0.3s;"></span>
+        <span style="display: block; width: 20px; height: 2px; background: var(--text-primary); transition: 0.3s;"></span>
+      </button>
+      
+      <!-- Dropdown menu -->
+      <div id="menu-dropdown" style="display: none; position: absolute; top: 50px; right: 0; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; min-width: 180px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
+        <button id="sessions-btn" style="width: 100%; padding: 0.8rem 1rem; background: none; border: none; color: var(--text-primary); cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-size: 0.95rem; border-bottom: 1px solid var(--border); border-radius: 12px 12px 0 0;">
+          <span style="font-size: 1.2em;">📊</span> Sessions
+        </button>
+        <button id="settings-btn" style="width: 100%; padding: 0.8rem 1rem; background: none; border: none; color: var(--text-primary); cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-size: 0.95rem; border-bottom: 1px solid var(--border); border-radius: 0;">
+          <span style="font-size: 1.2em;">⚙️</span> Settings
+        </button>
+        <button id="logout-btn" style="width: 100%; padding: 0.8rem 1rem; background: none; border: none; color: var(--error); cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-size: 0.95rem; border-radius: 0 0 12px 12px;">
+          <span style="font-size: 1.2em;">🚪</span> Logout
+        </button>
+      </div>
+    </div>
+    
+    <!-- Logo image displayed at the top -->
+    <img src="/images/logo.jpeg" alt="Session Tracker Logo" style="display:block; margin:auto; max-width:400px;" />
+    
+    <div class="container">
+      <h1>📈 Insights</h1>
+      
+      <div style="text-align: center; margin-top: 4rem; color: var(--text-secondary);">
+        <p style="font-size: 1.2rem;">Coming Soon</p>
+        <p style="margin-top: 1rem;">Session analytics and insights will be displayed here.</p>
+      </div>
+    </div>
+
+    <script>
+      // Check authentication on page load
+      async function checkAuth() {
+        try {
+          const res = await fetch("http://localhost:3000/auth/check", {
+            credentials: 'include'
+          });
+          const data = await res.json();
+          if (!data.authenticated) {
+            window.location.href = "/login.html";
+          }
+        } catch (err) {
+          console.error("Auth check failed:", err);
+          window.location.href = "/login.html";
+        }
+      }
+      
+      // Run auth check on page load
+      checkAuth();
+      
+      // Hamburger menu toggle
+      const hamburgerBtn = document.getElementById("hamburger-btn");
+      const menuDropdown = document.getElementById("menu-dropdown");
+      
+      hamburgerBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        menuDropdown.style.display = menuDropdown.style.display === "none" ? "block" : "none";
+      });
+      
+      // Close menu when clicking outside
+      document.addEventListener("click", (e) => {
+        if (!hamburgerBtn.contains(e.target) && !menuDropdown.contains(e.target)) {
+          menuDropdown.style.display = "none";
+        }
+      });
+
+      // Sessions button handler
+      document.getElementById("sessions-btn").addEventListener("click", () => {
+        window.location.href = "/index.html";
+      });
+      
+      // Settings button handler
+      document.getElementById("settings-btn").addEventListener("click", () => {
+        window.location.href = "/settings.html";
+      });
+      
+      // Logout handler
+      document.getElementById("logout-btn").addEventListener("click", async () => {
+        menuDropdown.style.display = "none";
+        try {
+          await fetch("http://localhost:3000/auth/logout", {
+            method: "POST",
+            credentials: 'include'
+          });
+          window.location.href = "/login.html";
+        } catch (err) {
+          console.error("Logout failed:", err);
+        }
+      });
+    </script>
+  </body>
+</html>

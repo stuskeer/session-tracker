@@ -40,7 +40,7 @@ async function createSession(req, res, next) {
       return;
     }
 
-    const { id, user_id, location, kite, duration, max_jump } = value;
+    const { id, user_id, location, date, kite, duration, max_jump } = value;
 
     const params = {
       TableName: "Sessions",
@@ -48,6 +48,7 @@ async function createSession(req, res, next) {
         id,
         user_id,
         location,
+        date,
         kite,
         duration,
         max_jump,
@@ -141,6 +142,12 @@ async function updateSessionById(req, res, next) {
       updateExpressions.push("#duration = :duration");
       expressionAttributeNames["#duration"] = "duration";
       expressionAttributeValues[":duration"] = value.duration;
+    }
+
+    if (value.date !== undefined) {
+      updateExpressions.push("#date = :date");
+      expressionAttributeNames["#date"] = "date";
+      expressionAttributeValues[":date"] = value.date;
     }
 
     // Update the session in DynamoDB

@@ -15,6 +15,13 @@ const sessionSchema = joi.object({
       'string.max': 'Location must not exceed 200 characters',
       'string.pattern.base': 'Location can only contain letters, numbers, spaces, hyphens, commas, periods, and apostrophes'
     }),
+  date: joi.string()
+    .pattern(/^\d{4}-\d{2}-\d{2}$/)
+    .required()
+    .messages({
+      'string.pattern.base': 'Date must be in YYYY-MM-DD format',
+      'any.required': 'Date is required'
+    }),
   kite: joi.string()
     .trim()
     .min(1)
@@ -58,6 +65,12 @@ const updateSessionSchema = joi.object({
       'string.min': 'Location must not be empty',
       'string.max': 'Location must not exceed 200 characters',
       'string.pattern.base': 'Location can only contain letters, numbers, spaces, hyphens, commas, periods, and apostrophes'
+    }),
+  date: joi.string()
+    .pattern(/^\d{4}-\d{2}-\d{2}$/)
+    .optional()
+    .messages({
+      'string.pattern.base': 'Date must be in YYYY-MM-DD format'
     }),
   kite: joi.string()
     .trim()
