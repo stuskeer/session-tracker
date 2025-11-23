@@ -16,6 +16,7 @@ Router.get("/auth/quiver", requireAuth, authController.getQuiver);
 Router.post("/auth/quiver", requireAuth, authController.addKite);
 Router.delete("/auth/quiver", requireAuth, authController.removeKite);
 Router.put("/auth/email", requireAuth, authController.updateEmail);
+Router.put("/auth/password", requireAuth, authController.updatePassword);
 
 // Session routes (protected - require authentication)
 Router.route("/sessions")

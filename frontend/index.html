@@ -52,6 +52,27 @@
           <div id="email-update-message" style="margin-top: 1rem;"></div>
         </details>
 
+        <!-- Update Password Section -->
+        <details style="margin-bottom: 1.5rem; background: var(--bg-main); padding: 1rem; border-radius: 12px; border: 1px solid var(--border);">
+          <summary style="cursor: pointer; font-weight: 600; color: var(--text-primary);">🔒 Update Password</summary>
+          <form id="update-password-form" style="margin-top: 1rem; display: flex; flex-direction: column; gap: 1rem;">
+            <div>
+              <label for="current-password" style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary);">Current Password</label>
+              <input type="password" id="current-password" name="current-password" placeholder="Enter current password" required style="width: 100%;" />
+            </div>
+            <div>
+              <label for="new-password" style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary);">New Password</label>
+              <input type="password" id="new-password" name="new-password" placeholder="Enter new password (min 8 chars)" required minlength="8" style="width: 100%;" />
+            </div>
+            <div>
+              <label for="confirm-password" style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary);">Confirm New Password</label>
+              <input type="password" id="confirm-password" name="confirm-password" placeholder="Confirm new password" required minlength="8" style="width: 100%;" />
+            </div>
+            <button type="submit" style="width: 100%;">Update Password</button>
+          </form>
+          <div id="password-update-message" style="margin-top: 1rem;"></div>
+        </details>
+
         <!-- Manage Quiver Section -->
         <details open style="background: var(--bg-main); padding: 1rem; border-radius: 12px; border: 1px solid var(--border);">
           <summary style="cursor: pointer; font-weight: 600; color: var(--text-primary);">🪁 Manage Quiver</summary>
@@ -424,6 +445,14 @@
         loadQuiver();
       });
       
+      // Check for hash on page load to open settings if navigating from insights
+      if (window.location.hash === '#settings') {
+        settingsModal.style.display = "flex";
+        loadQuiver();
+        // Remove hash from URL
+        history.replaceState(null, null, ' ');
+      }
+      
       // Close settings modal
       closeSettingsBtn.addEventListener("click", () => {
         settingsModal.style.display = "none";
@@ -551,7 +580,7 @@
       document.getElementById("update-email-form").addEventListener("submit", async (e) => {
         e.preventDefault();
         const form = e.target;
-        const newEmail = form.newEmail.value.trim();
+        const newEmail = form["new-email"].value.trim();
         
         if (!newEmail) return;
         
@@ -572,6 +601,49 @@
           form.reset();
         } catch (err) {
           alert("Could not update email: " + err.message);
+        }
+      });
+
+      // Update password
+      document.getElementById("update-password-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const form = e.target;
+        const currentPassword = form["current-password"].value;
+        const newPassword = form["new-password"].value;
+        const confirmPassword = form["confirm-password"].value;
+        
+        // Check if new passwords match
+        if (newPassword !== confirmPassword) {
+          alert("New passwords do not match!");
+          return;
+        }
+        
+        // Check password requirements
+        if (newPassword.length < 8) {
+          alert("New password must be at least 8 characters long");
+          return;
+        }
+        
+        try {
+          const res = await fetch("http://localhost:3000/auth/password", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            credentials: 'include',
+            body: JSON.stringify({ 
+              currentPassword: currentPassword,
+              newPassword: newPassword 
+            })
+          });
+          
+          if (!res.ok) {
+            const data = await res.json();
+            throw new Error(data.error || "Failed to update password");
+          }
+          
+          alert("Password updated successfully!");
+          form.reset();
+        } catch (err) {
+          alert("Could not update password: " + err.message);
         }
       });
       

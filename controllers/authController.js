@@ -345,6 +345,64 @@ async function updateEmail(req, res, next) {
   }
 }
 
+async function updatePassword(req, res, next) {
+  try {
+    const userId = req.session.userId;
+    const { currentPassword, newPassword } = req.body;
+    
+    // Validate inputs
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: "Current password and new password are required" });
+    }
+    
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: "New password must be at least 8 characters long" });
+    }
+    
+    // Get user from database
+    const getParams = {
+      TableName: "users",
+      Key: { user_id: userId },
+    };
+    
+    const result = await database.send(new GetCommand(getParams));
+    
+    if (!result.Item) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    
+    const user = result.Item;
+    
+    // Verify current password
+    const isValidPassword = await bcrypt.compare(currentPassword, user.password);
+    
+    if (!isValidPassword) {
+      return res.status(401).json({ error: "Current password is incorrect" });
+    }
+    
+    // Hash new password
+    const hashedNewPassword = await bcrypt.hash(newPassword, SALT_ROUNDS);
+    
+    // Update password
+    const updateParams = {
+      TableName: "users",
+      Key: { user_id: userId },
+      UpdateExpression: "set password = :password",
+      ExpressionAttributeValues: {
+        ":password": hashedNewPassword,
+      },
+    };
+    
+    await database.send(new UpdateCommand(updateParams));
+    
+    res.status(200).json({ 
+      message: "Password updated successfully"
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export default {
   login,
   register,
@@ -354,4 +412,5 @@ export default {
   addKite,
   removeKite,
   updateEmail,
+  updatePassword,
 };
