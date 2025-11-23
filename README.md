@@ -26,7 +26,13 @@ A modern Node.js application to track and manage your kitesurf sessions with a c
   - Edit or delete any user's session
   - User management interface
   - Role-based access restrictions
-- **Insights Page:** Placeholder for future analytics and statistics
+- **Insights & Analytics:**
+  - Highest jump achievement across all sessions
+  - Total session count and cumulative session time
+  - Sessions per location with max jump at each spot
+  - Interactive pie chart showing time distribution by kite
+  - Color-coded visualizations with percentages
+  - Real-time data calculations from session history
 - **UUID-Based Architecture:** User sessions linked via UUID, allowing email changes without data loss
 - **Session Security:** HTTP-only cookies and secure session management
 - **Input Validation:** Comprehensive Joi validation to prevent SQL injection and ensure data integrity
@@ -42,8 +48,8 @@ controllers/
     authController.js      # Authentication, user management, and admin functions
 frontend/
     index.html            # Main sessions page with table view
-    login.html            # Login/registration page
-    insights.html         # Insights page (placeholder)
+    login.html            # Login/registration page with password reset
+    insights.html         # Analytics dashboard with charts and statistics
     admin.html            # Admin panel for user management
     style.css             # Modern dark theme styling
     images/               # Logo and assets
@@ -320,7 +326,7 @@ All password operations use bcrypt's built-in functions for secure authenticatio
 
 ### Navigation
 - **Sessions Page** (`/index.html`): Main page with table view of all your sessions
-- **Insights Page** (`/insights.html`): Placeholder for future analytics features
+- **Insights Page** (`/insights.html`): Analytics dashboard with statistics and visualizations
 - **Hamburger Menu** (top right): Access Insights, Settings, and Logout
 
 ### Getting Started
@@ -382,6 +388,22 @@ All password operations use bcrypt's built-in functions for secure authenticatio
    - Enter your current password
    - Enter and confirm your new password (min 8 chars, mixed case + digit)
    - Click "Update Password"
+
+10. **Viewing Insights:**
+    - Click "Insights" (📈) from the hamburger menu
+    - View key statistics displayed in gradient cards:
+      - **Highest Jump:** Your personal best jump height
+      - **Total Sessions:** Count of all logged sessions
+      - **Total Time:** Cumulative time spent kiting
+    - **Time by Kite Chart:** Interactive donut pie chart showing:
+      - Percentage of time spent on each kite
+      - Actual hours and minutes per kite
+      - Color-coded legend sorted by most-used kites
+    - **Sessions by Location:** Bar chart visualization showing:
+      - Number of sessions at each location
+      - Percentage distribution
+      - Maximum jump height achieved at each spot
+      - Sorted by most frequent locations
 
 ### Admin Features
 
