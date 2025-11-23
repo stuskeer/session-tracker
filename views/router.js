@@ -22,6 +22,8 @@ Router.put("/auth/password", requireAuth, authController.updatePassword);
 // Admin routes (protected - admin only)
 Router.get("/admin/users", requireAuth, authController.getAllUsers);
 Router.post("/admin/reset-password", requireAuth, authController.initiatePasswordReset);
+Router.post("/admin/users/toggle-status", requireAuth, authController.toggleUserStatus);
+Router.delete("/admin/users/:userId", requireAuth, authController.deleteUser);
 Router.get("/admin/users/:userId/sessions", requireAuth, sessionController.getUserSessions);
 Router.put("/admin/sessions/:id", requireAuth, sessionController.adminUpdateSession);
 Router.delete("/admin/sessions/:id", requireAuth, sessionController.adminDeleteSession);

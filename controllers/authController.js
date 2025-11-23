@@ -34,6 +34,11 @@ async function login(req, res, next) {
     }
 
     const user = scanResult.Items[0];
+    
+    // Check if user is active (default to true for backward compatibility)
+    if (user.is_active === false) {
+      return res.status(403).json({ error: "Account is deactivated. Please contact an administrator." });
+    }
 
     // Check if user has a reset token (password reset required)
     if (user.reset_token) {
@@ -140,6 +145,7 @@ async function register(req, res, next) {
         email: email,
         password: hashedPassword,
         role: 'user', // Default role is 'user'
+        is_active: true, // New users are active by default (renamed from 'active' to avoid reserved keyword)
         account_created: ukDateTime,
         last_logon: null,
         quiver: [], // Initialize empty quiver
@@ -433,6 +439,7 @@ async function getAllUsers(req, res, next) {
       user_id: user.user_id,
       email: user.email,
       role: user.role,
+      active: user.is_active !== false, // Default to true for backward compatibility
       account_created: user.account_created,
       last_logon: user.last_logon,
       quiver_count: user.quiver ? user.quiver.length : 0
@@ -562,6 +569,107 @@ async function completePasswordReset(req, res, next) {
   }
 }
 
+async function toggleUserStatus(req, res, next) {
+  try {
+    // Check if user is admin
+    if (req.session.userRole !== 'admin') {
+      return res.status(403).json({ error: "Access denied. Admin privileges required." });
+    }
+    
+    const { userId, active } = req.body;
+    
+    if (!userId || typeof active !== 'boolean') {
+      return res.status(400).json({ error: "User ID and active status are required" });
+    }
+    
+    // Get user to verify it exists
+    const getParams = {
+      TableName: "users",
+      Key: { user_id: userId },
+    };
+    
+    const result = await database.send(new GetCommand(getParams));
+    
+    if (!result.Item) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    
+    // Prevent admin from deactivating themselves
+    if (userId === req.session.userId) {
+      return res.status(400).json({ error: "Cannot deactivate your own account" });
+    }
+    
+    // Update user active status
+    const updateParams = {
+      TableName: "users",
+      Key: { user_id: userId },
+      UpdateExpression: "set is_active = :active",
+      ExpressionAttributeValues: {
+        ":active": active,
+      },
+    };
+    
+    await database.send(new UpdateCommand(updateParams));
+    
+    res.status(200).json({ 
+      message: `User ${active ? 'activated' : 'deactivated'} successfully`,
+      userId,
+      active
+    });
+  } catch (error) {
+    console.error('Error in toggleUserStatus:', error);
+    res.status(500).json({ error: error.message || 'Failed to update user status' });
+  }
+}
+
+async function deleteUser(req, res, next) {
+  try {
+    // Check if user is admin
+    if (req.session.userRole !== 'admin') {
+      return res.status(403).json({ error: "Access denied. Admin privileges required." });
+    }
+    
+    const { userId } = req.params;
+    
+    if (!userId) {
+      return res.status(400).json({ error: "User ID is required" });
+    }
+    
+    // Get user to verify it exists
+    const getParams = {
+      TableName: "users",
+      Key: { user_id: userId },
+    };
+    
+    const result = await database.send(new GetCommand(getParams));
+    
+    if (!result.Item) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    
+    // Prevent admin from deleting themselves
+    if (userId === req.session.userId) {
+      return res.status(400).json({ error: "Cannot delete your own account" });
+    }
+    
+    // Delete user
+    const deleteParams = {
+      TableName: "users",
+      Key: { user_id: userId },
+    };
+    
+    await database.send(new DeleteCommand(deleteParams));
+    
+    res.status(200).json({ 
+      message: "User deleted successfully",
+      userId
+    });
+  } catch (error) {
+    console.error('Error in deleteUser:', error);
+    res.status(500).json({ error: error.message || 'Failed to delete user' });
+  }
+}
+
 export default {
   login,
   register,
@@ -575,4 +683,6 @@ export default {
   getAllUsers,
   initiatePasswordReset,
   completePasswordReset,
+  toggleUserStatus,
+  deleteUser,
 };
